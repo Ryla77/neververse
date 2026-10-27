@@ -211,3 +211,26 @@ CREATE TABLE IF NOT EXISTS email_verifications (
     KEY idx_email_verifications_expiry (expires_at),
     CONSTRAINT fk_email_verifications_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_two_factor (
+    user_id INT UNSIGNED NOT NULL,
+    secret_ciphertext VARCHAR(255) NOT NULL,
+    last_used_step BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    enabled_at DATETIME NOT NULL,
+    last_verified_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id),
+    CONSTRAINT fk_user_two_factor_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_recovery_codes (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id INT UNSIGNED NOT NULL,
+    code_hash CHAR(64) NOT NULL,
+    used_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_user_recovery_codes_hash (user_id, code_hash),
+    KEY idx_user_recovery_codes_user (user_id, used_at),
+    CONSTRAINT fk_user_recovery_codes_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

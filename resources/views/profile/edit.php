@@ -3,6 +3,12 @@
 declare(strict_types=1);
 
 use App\Core\View;
+use App\Services\TwoFactorService;
+
+$twoFactorActive = TwoFactorService::enabled((int) $user['id']);
+$twoFactorAvailable = TwoFactorService::available();
+$twoFactorCodes = flash('two_factor_recovery_codes', []);
+$twoFactorRemaining = $twoFactorActive ? TwoFactorService::remainingRecoveryCodes((int) $user['id']) : 0;
 
 $historyUrl = static function (array $item): string {
     if (!empty($item['chapter_number'])) {
@@ -117,6 +123,66 @@ $historyUrl = static function (array $item): string {
                         <button class="btn btn--soft" type="submit">Perbarui kata sandi</button>
                     </div>
                 </form>
+            </section>
+
+            <section class="panel" id="dua-langkah">
+                <div class="panel__head panel__head--split">
+                    <div>
+                        <span class="eyebrow">Keamanan</span>
+                        <h2>Verifikasi dua langkah</h2>
+                    </div>
+                    <?php if ($twoFactorActive): ?>
+                        <span class="badge badge--published"><?= icon('shield', 'icon icon--sm') ?>Aktif</span>
+                    <?php else: ?>
+                        <span class="badge badge--muted"><?= icon('shield', 'icon icon--sm') ?>Tidak aktif</span>
+                    <?php endif; ?>
+                </div>
+
+                <?php if (is_array($twoFactorCodes) && $twoFactorCodes !== []): ?>
+                    <div class="recovery-codes" role="status">
+                        <p class="recovery-codes__title"><?= icon('key', 'icon icon--sm') ?> Simpan kode pemulihan ini sekarang</p>
+                        <p class="small muted">Setiap kode hanya dapat dipakai sekali bila Anda kehilangan akses ke aplikasi autentikator. Kode tidak akan ditampilkan lagi.</p>
+                        <ul class="recovery-codes__list">
+                            <?php foreach ($twoFactorCodes as $recoveryCode): ?>
+                                <li><code><?= e((string) $recoveryCode) ?></code></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($twoFactorActive): ?>
+                    <p class="small muted">Akun ini meminta kode dari aplikasi autentikator setiap kali masuk. Kode pemulihan tersisa: <strong><?= $twoFactorRemaining ?></strong>.</p>
+                    <details class="recovery-toggle">
+                        <summary>Nonaktifkan verifikasi dua langkah</summary>
+                        <form class="form-stack" action="<?= e(url('profil/2fa/nonaktif')) ?>" method="post" novalidate>
+                            <?= csrf_field() ?>
+                            <div class="field">
+                                <label class="label" for="two-factor-password">Kata sandi saat ini</label>
+                                <div class="input-group">
+                                    <span class="input-group__icon"><?= icon('lock', 'icon icon--sm') ?></span>
+                                    <input class="input" type="password" id="two-factor-password" name="current_password" autocomplete="current-password" required maxlength="72">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="two-factor-disable-code">Kode autentikator atau kode pemulihan</label>
+                                <div class="input-group">
+                                    <span class="input-group__icon"><?= icon('shield', 'icon icon--sm') ?></span>
+                                    <input class="input input--code" type="text" id="two-factor-disable-code" name="code" autocomplete="one-time-code" required maxlength="9" placeholder="123456 atau XXXX-XXXX">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn--danger" type="submit"><?= icon('lock', 'icon icon--sm') ?>Nonaktifkan 2FA</button>
+                            </div>
+                        </form>
+                    </details>
+                <?php elseif ($twoFactorAvailable): ?>
+                    <p class="small muted">Tambahkan lapisan keamanan kedua: setelah kata sandi, masuk juga memerlukan kode 6 digit dari aplikasi autentikator di ponsel Anda.</p>
+                    <div class="form-actions">
+                        <a class="btn btn--soft" href="<?= e(url('profil/2fa')) ?>"><?= icon('shield', 'icon icon--sm') ?>Aktifkan verifikasi dua langkah</a>
+                    </div>
+                <?php else: ?>
+                    <p class="small muted">Verifikasi dua langkah belum dapat diaktifkan karena <code>APP_KEY</code> belum diset di <code>.env</code>. Administrator perlu menambahkan kunci tersebut lalu memuat ulang aplikasi.</p>
+                <?php endif; ?>
             </section>
 
             <section class="panel">

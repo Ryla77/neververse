@@ -49,4 +49,12 @@ return [
     'email_verification' => [
         'ttl_minutes' => max(5, (int) env('EMAIL_VERIFICATION_TTL', 1440)),
     ],
+    'security' => [
+        'app_key' => (string) env('APP_KEY', ''),
+    ],
+    'two_factor' => [
+        'issuer' => (string) env('APP_NAME', 'NovelVerse'),
+        'pending_ttl_seconds' => 600,
+        'recovery_code_count' => 8,
+    ],
 ];

@@ -8,12 +8,12 @@ Fitur utama:
 - Katalog novel dengan pencarian judul/penulis, filter genre, pengurutan, dan paginasi.
 - Halaman detail novel: sampul, sinopsis, genre, status, jumlah bab, rating, komentar, dan daftar bab.
 - Pembaca (reader) dengan pengaturan tema baca, ukuran huruf, lebar kolom, jarak paragraf, daftar isi, navigasi bab, dan penyimpanan progres.
-- Registrasi, login, logout, verifikasi email, ubah profil, ubah kata sandi, peningkatan peran menjadi penulis, serta lupa/reset kata sandi melalui email dengan transport `file`, `mail()`, atau SMTP ber-TLS. Komentar, rating, dan akses penulis baru aktif setelah email terverifikasi.
+- Registrasi, login, logout, verifikasi email, ubah profil, ubah kata sandi, peningkatan peran menjadi penulis, serta lupa/reset kata sandi melalui email dengan transport `file`, `mail()`, atau SMTP ber-TLS. Komentar, rating, dan akses penulis baru aktif setelah email terverifikasi. Verifikasi dua langkah (2FA) berbasis TOTP tersedia sebagai perlindungan tambahan saat login.
 - Perpustakaan pribadi: novel tersimpan, riwayat baca, lanjutkan membaca, dan hapus dari perpustakaan.
 - Dashboard penulis: kelola novel milik sendiri, unggah sampul, tulis/edit bab, draf, publikasi, dan status ongoing/completed.
 - Dashboard admin: statistik, pengguna dan peran, novel, bab, genre, moderasi komentar, serta laporan.
 - Tema gelap/terang, desain responsif untuk desktop, tablet, dan ponsel.
-- Keamanan dasar: `password_hash()`/`password_verify()`, CSRF, session yang diperketat, prepared statement, escaping output, kontrol peran di backend, pembatasan percobaan, dan validasi unggahan.
+- Keamanan dasar: `password_hash()`/`password_verify()`, CSRF, session yang diperketat, prepared statement, escaping output, kontrol peran di backend, pembatasan percobaan, validasi unggahan, dan 2FA TOTP dengan rahasia terenkripsi serta kode pemulihan sekali pakai.
 
 ## Teknologi
 
@@ -172,6 +172,7 @@ Konfigurasi dibaca dari `.env` di root proyek. Berkas ini **tidak boleh** di-com
 | `APP_DEBUG` | Detail error di browser | `false` untuk produksi |
 | `APP_TIMEZONE` | Zona waktu aplikasi | `Asia/Jakarta` |
 | `APP_URL` | URL publik untuk tautan email; wajib di produksi dan harus menyertakan subfolder bila ada | `https://novelverse.example.com` |
+| `APP_KEY` | Kunci AES-256-GCM (base64, 32 byte) untuk mengenkripsi rahasia 2FA; wajib agar 2FA dapat diaktifkan | hasil `php -r "echo base64_encode(random_bytes(32)), PHP_EOL;"` |
 | `DB_HOST` | Host database | `127.0.0.1` |
 | `DB_PORT` | Port database | `3306` |
 | `DB_NAME` | Nama database | `novelverse` |
@@ -194,6 +195,8 @@ Konfigurasi dibaca dari `.env` di root proyek. Berkas ini **tidak boleh** di-com
 | `EMAIL_VERIFICATION_TTL` | Masa berlaku tautan verifikasi email (menit, minimal 5) | `1440` |
 
 Kredensial database sebaiknya hanya dimiliki user aplikasi dengan hak pada database `novelverse`, bukan root. Installer sudah melakukan ini.
+
+`APP_KEY` dibuat otomatis oleh installer. Jangan mengganti nilainya setelah ada pengguna mengaktifkan 2FA: rahasia TOTP dienkripsi dengan kunci ini dan tidak dapat didekripsi lagi jika kunci berubah. Cadangkan `.env` bersama database.
 
 ## Setup SMTP
 
@@ -341,12 +344,15 @@ Jika aplikasi dipasang di subfolder (misalnya `http://localhost/novelverse`), ar
 | `/novel/{slug}` | Detail novel, komentar, rating | Publik |
 | `/novel/{slug}/baca/{nomor}` | Reader | Publik (progres tamu di localStorage) |
 | `/masuk`, `/daftar` | Login / registrasi | Tamu |
+| `/masuk/2fa` | Tantangan kode autentikator/kode pemulihan setelah kata sandi benar | Tamu dengan sesi pending |
 | `/lupa-sandi` | Minta tautan reset kata sandi via email | Tamu |
 | `/reset-sandi/{token}` | Formulir kata sandi baru dari tautan email | Tamu |
 | `/verifikasi-email/{token}` | Verifikasi email dari tautan | Publik (token) |
 | `/verifikasi-email/kirim-ulang` | Kirim ulang tautan verifikasi (POST) | Login |
 | `/perpustakaan` | Favorit, riwayat, lanjutkan membaca | Login |
-| `/profil` | Profil, ubah nama, kata sandi, jadi penulis | Login |
+| `/profil` | Profil, ubah nama, kata sandi, jadi penulis, status 2FA | Login |
+| `/profil/2fa` | Aktivasi 2FA: tampilkan kunci TOTP dan konfirmasi kode | Login |
+| `/profil/2fa/nonaktif` | Nonaktifkan 2FA dengan kata sandi + kode (POST) | Login |
 | `/tulis` | Dashboard penulis | Penulis/Admin |
 | `/admin` | Dashboard admin | Admin |
 
@@ -409,6 +415,28 @@ ON DUPLICATE KEY UPDATE verified_at = COALESCE(verified_at, NOW());
 
 Lewati backfill tersebut bila pengguna lama memang harus memverifikasi ulang alamat emailnya.
 
+## Verifikasi Dua Langkah (2FA)
+
+2FA memakai TOTP (RFC 6238, SHA-1, 6 digit, periode 30 detik) sehingga dapat dipakai dengan Google Authenticator, Microsoft Authenticator, Aegis, 1Password, dan aplikasi serupa. Fitur ini opsional per akun dan memerlukan `APP_KEY` yang valid.
+
+Aktivasi:
+
+1. Masuk, buka `/profil`, lalu pilih **Aktifkan 2FA** pada panel **Verifikasi dua langkah**.
+2. Halaman `/profil/2fa` menampilkan kunci base32 (32 karakter) dan tautan `otpauth://totp/...`. Pindai tautan atau masukkan kunci secara manual ke aplikasi autentikator.
+3. Masukkan kode 6 digit dari aplikasi untuk mengonfirmasi. Setelah berhasil, 2FA aktif dan **8 kode pemulihan** ditampilkan satu kali. Simpan kode tersebut di tempat aman; kode tidak dapat ditampilkan lagi.
+4. Login berikutnya meminta kata sandi lalu kode autentikator di `/masuk/2fa`. Sesi login baru dibuat hanya setelah faktor kedua valid.
+
+Detail keamanan:
+
+- Rahasia TOTP disimpan terenkripsi AES-256-GCM di `user_two_factor`; kunci enkripsi berasal dari `APP_KEY`. Nilai asli tidak pernah ditulis ke database atau log.
+- Kode pemulihan berbentuk `XXXX-XXXX`, dibuat acak, disimpan hanya sebagai hash SHA-256 di `user_recovery_codes`, dan hangus setelah dipakai sekali.
+- Kode TOTP yang sudah diterima tidak dapat dipakai ulang (anti-replay berbasis langkah waktu terakhir). Toleransi pergeseran jam ±1 langkah (30 detik).
+- Sesi pending setelah kata sandi benar berlaku 10 menit dan belum memiliki hak akses apa pun. Percobaan kode yang gagal dibatasi 5 per 15 menit per akun dan 20 per 15 menit per IP; melewati batas menghapus sesi pending dan mengembalikan pengguna ke halaman masuk.
+- Aktivasi dan penonaktifan juga dibatasi (masing-masing 5 percobaan per 15 menit). Menonaktifkan 2FA mewajibkan kata sandi saat ini **dan** kode autentikator atau kode pemulihan yang valid.
+- Akun yang menonaktifkan 2FA menghapus rahasia TOTP beserta seluruh kode pemulihannya.
+
+Jika memperbarui instalasi lama, terapkan tabel `user_two_factor` dan `user_recovery_codes` dari `database/schema.sql`, lalu pastikan `APP_KEY` terisi di `.env`. Tanpa `APP_KEY`, panel 2FA menampilkan peringatan dan aktivasi ditolak di backend.
+
 ## Mengelola Novel dan Bab (Penulis/Admin)
 
 1. Masuk dengan akun penulis atau admin.
@@ -463,14 +491,14 @@ C:\xampp\php\php.exe tests\run.php
 Hasil terakhir pada lingkungan ini:
 
 ```text
-Total pemeriksaan : 176
-Lulus             : 176
+Total pemeriksaan : 192
+Lulus             : 192
 Gagal             : 0
 ```
 
 Ringkasan tersimpan di `tests/last-run.json`; keluaran lengkap di `tests/last-output.txt`. Keduanya artefak tes dan di-gitignore.
 
-Cakupan tes antara lain: koneksi database, halaman publik, registrasi/login/logout, validasi, CSRF, pencarian/filter/urut/paginasi, detail novel, navigasi bab, progres baca, favorit tambah/hapus, komentar dan rating, laporan, unggahan sampul, alur draf hingga publikasi, pembatasan peran, kepemilikan novel, pengelolaan admin, output escaping, header keamanan, verifikasi email (email bertoken, banner, kirim ulang, pembatalan tautan lama, token sekali pakai, token kedaluwarsa, penolakan komentar/rating/akses penulis sebelum verifikasi, dan verifikasi ulang saat email berubah), serta alur lupa/reset kata sandi (pesan umum, email lokal, hash token, token sekali pakai, token kedaluwarsa, validasi sandi, login dengan sandi baru, dan pembatalan tautan saat sandi diubah).
+Cakupan tes antara lain: koneksi database, halaman publik, registrasi/login/logout, validasi, CSRF, pencarian/filter/urut/paginasi, detail novel, navigasi bab, progres baca, favorit tambah/hapus, komentar dan rating, laporan, unggahan sampul, alur draf hingga publikasi, pembatasan peran, kepemilikan novel, pengelolaan admin, output escaping, header keamanan, verifikasi email (email bertoken, banner, kirim ulang, pembatalan tautan lama, token sekali pakai, token kedaluwarsa, penolakan komentar/rating/akses penulis sebelum verifikasi, dan verifikasi ulang saat email berubah), alur lupa/reset kata sandi (pesan umum, email lokal, hash token, token sekali pakai, token kedaluwarsa, validasi sandi, login dengan sandi baru, dan pembatalan tautan saat sandi diubah), serta 2FA (aktivasi dengan kode TOTP, rahasia terenkripsi, kode pemulihan sekali tampil dan sekali pakai, sesi pending tanpa hak akses, penolakan kode salah, anti-replay, pergeseran langkah waktu, penonaktifan dengan kata sandi + kode, dan rate limit tantangan).
 
 ### Tes SMTP end-to-end
 
@@ -549,6 +577,7 @@ Log aplikasi berada di `storage/logs/app.log`. Log tidak diletakkan di folder pu
 - Rate limit untuk login, registrasi, komentar, rating, laporan, perubahan kata sandi, permintaan/penggunaan tautan reset kata sandi, serta penggunaan dan pengiriman ulang tautan verifikasi email.
 - Token reset kata sandi dan token verifikasi email dibuat acak 256-bit, disimpan hanya sebagai hash SHA-256, memiliki masa berlaku, dan tidak dapat dipakai ulang. Respons permintaan reset selalu generik agar keberadaan akun tidak dapat ditebak. Tautan reset yang belum dipakai dibatalkan saat kata sandi diubah (mandiri atau oleh admin), email diganti, atau akun dinonaktifkan.
 - Verifikasi email ditegakkan di backend, bukan hanya lewat tampilan: komentar, rating, dan peningkatan peran penulis menolak akun yang belum terverifikasi. Mengganti email membatalkan status verifikasi dan memaksa verifikasi ulang alamat baru.
+- 2FA TOTP: rahasia dienkripsi AES-256-GCM dengan `APP_KEY`, kode pemulihan disimpan sebagai hash SHA-256 dan sekali pakai, kode TOTP tidak dapat dipakai ulang, sesi pending berlaku 10 menit tanpa hak akses, dan tantangan/aktivasi/penonaktifan dibatasi di backend.
 - Transport SMTP memverifikasi sertifikat server (TLS 1.2/1.3, `verify_peer` dan `verify_peer_name` aktif), mewajibkan STARTTLS pada mode `tls`, menolak kredensial tanpa TLS, serta tidak menuliskan kata sandi ke pesan kesalahan atau log.
 - Unggahan divalidasi tipe isi, ukuran, dan dimensi; nama file diacak; eksekusi PHP di folder unggahan dinonaktifkan.
 - Header keamanan: CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, dan `Permissions-Policy`.
@@ -559,7 +588,7 @@ Aplikasi belum diaudit oleh pihak ketiga. Pengujian yang dilakukan adalah tes in
 
 ## Batasan yang Diketahui
 
-- Belum ada 2FA. Verifikasi email tersedia, tetapi akun yang belum terverifikasi tetap dapat login dan membaca; hanya komentar, rating, dan peningkatan peran penulis yang dibatasi. Reset kata sandi mandiri melalui email tersedia; reset oleh admin tetap dapat dilakukan.
+- 2FA memakai TOTP aplikasi autentikator; tidak ada OTP via SMS/email, WebAuthn/passkey, atau opsi "ingat perangkat ini". Kehilangan aplikasi autentikator dan seluruh kode pemulihan berarti akun tidak dapat masuk tanpa bantuan admin. Verifikasi email tersedia, tetapi akun yang belum terverifikasi tetap dapat login dan membaca; hanya komentar, rating, dan peningkatan peran penulis yang dibatasi. Reset kata sandi mandiri melalui email tersedia; reset oleh admin tetap dapat dilakukan.
 - Transport email `file` dan `smtp` diuji di lingkungan ini. SMTP diuji terhadap server lokal dengan STARTTLS dan AUTH, bukan terhadap penyedia eksternal seperti Gmail atau Outlook. Pengiriman nyata, reputasi domain, SPF/DKIM, bounce, dan spam filter tidak diuji di sini. Transport `mail()` tetap bergantung pada konfigurasi MTA server.
 - Unggahan gambar tidak di-re-encode (GD tidak tersedia di lingkungan ini); validasi mengandalkan `finfo` dan `getimagesize`.
 - CSP mengizinkan `style-src 'unsafe-inline'` karena beberapa gaya ditulis inline.

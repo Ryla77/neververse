@@ -16,7 +16,9 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/bootstrap.php';
 
+use App\Core\Crypto;
 use App\Core\Database;
+use App\Core\Totp;
 use App\Models\BookmarkModel;
 use App\Models\ReadingProgressModel;
 
@@ -97,7 +99,6 @@ final class Http
         $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
         $location = curl_getinfo($curl, CURLINFO_REDIRECT_URL);
         curl_close($curl);
-
         if ($body === false) {
             $body = '';
             $status = 0;
@@ -108,7 +109,7 @@ final class Http
             'status' => $status,
             'body' => (string) $body,
             'headers' => $responseHeaders,
-            'location' => $location !== '' ? $location : null,
+            'location' => is_string($location) && $location !== '' ? $location : null,
         ];
     }
 
@@ -1282,6 +1283,195 @@ try {
     check('Kata sandi admin tidak disimpan sebagai teks biasa', $adminHash !== null && str_contains((string) $adminHash['password_hash'], $admin['password']) === false && str_starts_with((string) $adminHash['password_hash'], '$2y$'));
 
     /* ----------------------------------------------------------------------
+       Verifikasi dua langkah (2FA)
+       ---------------------------------------------------------------------- */
+
+    Database::execute("DELETE FROM rate_limits WHERE bucket IN ('login', 'login-ip', 'two-factor', 'two-factor-ip', 'two-factor-setup', 'two-factor-disable')");
+
+    $twoFactorEmail = 'dua.' . $suffix . '@example.test';
+    $twoFactorPassword = 'DuaFaktor!' . $suffix;
+    $twoFactorDisplay = 'Pembaca 2FA ' . $suffix;
+    $twoFactorUserId = null;
+
+    postWith($http, 'twofactor', '/daftar', [
+        'display_name' => $twoFactorDisplay,
+        'email' => $twoFactorEmail,
+        'password' => $twoFactorPassword,
+        'password_confirm' => $twoFactorPassword,
+    ]);
+    $tokens = [];
+    $twoFactorUser = Database::fetch('SELECT id FROM users WHERE email = ?', [$twoFactorEmail]);
+    $twoFactorUserId = $twoFactorUser !== null ? (int) $twoFactorUser['id'] : null;
+    $twoFactorMail = mailFor($mailDir, $twoFactorEmail, '/verifikasi-email/');
+    if ($twoFactorMail['file'] !== '') {
+        $mailFilesCreated[] = $twoFactorMail['file'];
+    }
+    preg_match('#/verifikasi-email/([a-f0-9]{64})#', $twoFactorMail['raw'], $twoFactorMatch);
+    if (($twoFactorMatch[1] ?? '') !== '') {
+        $http->request('twofactor', 'GET', '/verifikasi-email/' . $twoFactorMatch[1]);
+    }
+    check('Akun uji 2FA terdaftar dan terverifikasi', $twoFactorUserId !== null && Database::fetch('SELECT verified_at FROM email_verifications WHERE user_id = ?', [$twoFactorUserId])['verified_at'] !== null);
+
+    $setupPage = $http->request('twofactor', 'GET', '/profil/2fa');
+    preg_match('/class="secret-key"[^>]*>\s*<code>([^<]+)<\/code>/', $setupPage['body'], $secretMatch);
+    $twoFactorSecret = preg_replace('/\s+/', '', $secretMatch[1] ?? '') ?? '';
+    check(
+        'Halaman aktivasi menampilkan kunci TOTP dan tautan otpauth',
+        $setupPage['status'] === 200
+            && preg_match('/^[A-Z2-7]{32}$/', $twoFactorSecret) === 1
+            && str_contains($setupPage['body'], 'otpauth://totp/')
+    );
+
+    $enableResponse = postWith($http, 'twofactor', '/profil/2fa', ['code' => Totp::code($twoFactorSecret)]);
+    $twoFactorRow = Database::fetch('SELECT secret_ciphertext, last_used_step FROM user_two_factor WHERE user_id = ?', [$twoFactorUserId]);
+    check(
+        'Aktivasi 2FA menyimpan secret terenkripsi, bukan teks asli',
+        $enableResponse['status'] === 302
+            && locationIs($enableResponse, '/profil')
+            && $twoFactorRow !== null
+            && $twoFactorRow['secret_ciphertext'] !== $twoFactorSecret
+            && Crypto::decrypt((string) $twoFactorRow['secret_ciphertext']) === $twoFactorSecret
+    );
+
+    $profileAfterEnable = $http->request('twofactor', 'GET', '/profil');
+    preg_match('/recovery-codes__list.*?<\/ul>/s', $profileAfterEnable['body'], $recoveryBlock);
+    preg_match_all('/<code>([A-Z2-7]{4}-[A-Z2-7]{4})<\/code>/', $recoveryBlock[0] ?? '', $recoveryMatches);
+    $twoFactorRecoveryCodes = array_values(array_unique($recoveryMatches[1] ?? []));
+    check(
+        'Profil menampilkan status aktif dan delapan kode pemulihan sekali tampil',
+        str_contains($profileAfterEnable['body'], 'Verifikasi dua langkah')
+            && str_contains($profileAfterEnable['body'], '>Aktif<')
+            && count($twoFactorRecoveryCodes) === 8
+            && dbCount('SELECT COUNT(*) FROM user_recovery_codes WHERE user_id = ? AND used_at IS NULL', [$twoFactorUserId]) === 8
+    );
+
+    $tokens = [];
+    $logoutTwoFactor = $http->request('twofactor', 'POST', '/keluar', ['_token' => tokenFor($http, 'twofactor', '/')]);
+    $tokens = [];
+    check('Logout akun 2FA berhasil', $logoutTwoFactor['status'] === 302);
+
+    $twoFactorLogin = postWith($http, 'twofactor', '/masuk', ['email' => $twoFactorEmail, 'password' => $twoFactorPassword]);
+    check(
+        'Login akun 2FA dialihkan ke tantangan kode dan belum membuat sesi',
+        $twoFactorLogin['status'] === 302
+            && locationIs($twoFactorLogin, '/masuk/2fa')
+            && $http->request('twofactor', 'GET', '/profil')['status'] === 302
+    );
+
+    $challengePage = $http->request('twofactor', 'GET', '/masuk/2fa');
+    check(
+        'Halaman tantangan menampilkan kode autentikator dan opsi pemulihan',
+        $challengePage['status'] === 200
+            && str_contains($challengePage['body'], 'Masukkan kode keamanan')
+            && str_contains($challengePage['body'], 'name="recovery_code"')
+    );
+
+    $wrongCode = Totp::code($twoFactorSecret) === '000000' ? '000001' : '000000';
+    $wrongChallenge = postWith($http, 'twofactor', '/masuk/2fa', ['code' => $wrongCode]);
+    $wrongChallengePage = follow($http, 'twofactor', $wrongChallenge);
+    check(
+        'Kode autentikator salah ditolak tanpa membuat sesi',
+        $wrongChallenge['status'] === 302
+            && locationIs($wrongChallenge, '/masuk/2fa')
+            && str_contains($wrongChallengePage['body'], 'Kode tidak valid')
+            && $http->request('twofactor', 'GET', '/profil')['status'] === 302
+    );
+
+    $validChallenge = postWith($http, 'twofactor', '/masuk/2fa', ['code' => Totp::code($twoFactorSecret)]);
+    check(
+        'Kode autentikator benar menyelesaikan login',
+        $validChallenge['status'] === 302
+            && $http->request('twofactor', 'GET', '/profil')['status'] === 200
+    );
+    $tokens = [];
+
+    $http->request('twofactor', 'POST', '/keluar', ['_token' => tokenFor($http, 'twofactor', '/')]);
+    $tokens = [];
+    postWith($http, 'twofactor', '/masuk', ['email' => $twoFactorEmail, 'password' => $twoFactorPassword]);
+    $tokens = [];
+    $recoveryLogin = postWith($http, 'twofactor', '/masuk/2fa', ['recovery_code' => $twoFactorRecoveryCodes[0] ?? '']);
+    check(
+        'Kode pemulihan dapat menggantikan kode autentikator',
+        $recoveryLogin['status'] === 302
+            && $http->request('twofactor', 'GET', '/profil')['status'] === 200
+            && dbCount('SELECT COUNT(*) FROM user_recovery_codes WHERE user_id = ? AND used_at IS NOT NULL', [$twoFactorUserId]) === 1
+    );
+    $tokens = [];
+
+    $http->request('twofactor', 'POST', '/keluar', ['_token' => tokenFor($http, 'twofactor', '/')]);
+    $tokens = [];
+    postWith($http, 'twofactor', '/masuk', ['email' => $twoFactorEmail, 'password' => $twoFactorPassword]);
+    $tokens = [];
+    $reuseRecovery = postWith($http, 'twofactor', '/masuk/2fa', ['recovery_code' => $twoFactorRecoveryCodes[0] ?? '']);
+    check(
+        'Kode pemulihan tidak dapat dipakai dua kali',
+        $reuseRecovery['status'] === 302
+            && locationIs($reuseRecovery, '/masuk/2fa')
+            && $http->request('twofactor', 'GET', '/profil')['status'] === 302
+    );
+
+    $replayTotp = postWith($http, 'twofactor', '/masuk/2fa', ['code' => Totp::code($twoFactorSecret)]);
+    check(
+        'Kode autentikator yang sudah dipakai ditolak (anti-replay)',
+        $replayTotp['status'] === 302
+            && locationIs($replayTotp, '/masuk/2fa')
+            && $http->request('twofactor', 'GET', '/profil')['status'] === 302
+    );
+
+    $nextStepCode = Totp::code($twoFactorSecret, time() + 30);
+    $nextStepChallenge = postWith($http, 'twofactor', '/masuk/2fa', ['code' => $nextStepCode]);
+    check(
+        'Kode dari langkah waktu berikutnya diterima',
+        $nextStepChallenge['status'] === 302 && $http->request('twofactor', 'GET', '/profil')['status'] === 200
+    );
+    $tokens = [];
+
+    $disableWithoutCode = postWith($http, 'twofactor', '/profil/2fa/nonaktif', [
+        'current_password' => $twoFactorPassword,
+        'code' => '000000',
+    ]);
+    check(
+        'Nonaktifkan 2FA menolak kode yang salah',
+        $disableWithoutCode['status'] === 302
+            && locationIs($disableWithoutCode, '/profil')
+            && dbCount('SELECT COUNT(*) FROM user_two_factor WHERE user_id = ?', [$twoFactorUserId]) === 1
+    );
+
+    $disableResponse = postWith($http, 'twofactor', '/profil/2fa/nonaktif', [
+        'current_password' => $twoFactorPassword,
+        'code' => $twoFactorRecoveryCodes[1] ?? '',
+    ]);
+    check(
+        'Nonaktifkan 2FA dengan sandi dan kode pemulihan menghapus secret',
+        $disableResponse['status'] === 302
+            && dbCount('SELECT COUNT(*) FROM user_two_factor WHERE user_id = ?', [$twoFactorUserId]) === 0
+            && dbCount('SELECT COUNT(*) FROM user_recovery_codes WHERE user_id = ?', [$twoFactorUserId]) === 0
+    );
+
+    $tokens = [];
+    $reenablePage = $http->request('twofactor', 'GET', '/profil/2fa');
+    preg_match('/class="secret-key"[^>]*>\s*<code>([^<]+)<\/code>/', $reenablePage['body'], $reenableMatch);
+    $reenableSecret = preg_replace('/\s+/', '', $reenableMatch[1] ?? '') ?? '';
+    postWith($http, 'twofactor', '/profil/2fa', ['code' => Totp::code($reenableSecret)]);
+    $http->request('twofactor', 'POST', '/keluar', ['_token' => tokenFor($http, 'twofactor', '/')]);
+    $tokens = [];
+    postWith($http, 'twofactor', '/masuk', ['email' => $twoFactorEmail, 'password' => $twoFactorPassword]);
+    $tokens = [];
+    Database::execute("DELETE FROM rate_limits WHERE bucket IN ('two-factor', 'two-factor-ip')");
+    for ($attempt = 1; $attempt <= 5; $attempt++) {
+        postWith($http, 'twofactor', '/masuk/2fa', ['code' => '000000']);
+    }
+    $throttledChallenge = postWith($http, 'twofactor', '/masuk/2fa', ['code' => '000000']);
+    $throttledPage = follow($http, 'twofactor', $throttledChallenge);
+    check(
+        'Rate limit tantangan 2FA memblokir percobaan berulang dan menghapus sesi pending',
+        $throttledChallenge['status'] === 302
+            && locationIs($throttledChallenge, '/masuk')
+            && str_contains($throttledPage['body'], 'Terlalu banyak percobaan kode')
+    );
+    $tokens = [];
+
+    /* ----------------------------------------------------------------------
        Rate limit login (kemudian dibersihkan agar pengujian dapat diulang)
        ---------------------------------------------------------------------- */
 
@@ -1318,12 +1508,20 @@ try {
     if ($pendingUserId !== null) {
         Database::execute('DELETE FROM users WHERE id = ?', [$pendingUserId]);
     }
+    if (isset($twoFactorUserId) && $twoFactorUserId !== null) {
+        Database::execute('DELETE FROM users WHERE id = ?', [$twoFactorUserId]);
+    }
+    $testRecipients = ['To: ' . $testEmail, 'To: ' . $pendingEmail, 'To: ' . $pendingEmail2];
+    if (isset($twoFactorEmail)) {
+        $testRecipients[] = 'To: ' . $twoFactorEmail;
+    }
     foreach (glob(BASE_PATH . '/storage/mail/*.eml') ?: [] as $mailFile) {
         $mailContent = (string) file_get_contents($mailFile);
-        if (str_contains($mailContent, 'To: ' . $testEmail)
-            || str_contains($mailContent, 'To: ' . $pendingEmail)
-            || str_contains($mailContent, 'To: ' . $pendingEmail2)) {
-            @unlink($mailFile);
+        foreach ($testRecipients as $recipient) {
+            if (str_contains($mailContent, $recipient)) {
+                @unlink($mailFile);
+                break;
+            }
         }
     }
     foreach ($mailFilesCreated as $mailFile) {

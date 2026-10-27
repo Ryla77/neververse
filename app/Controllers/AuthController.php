@@ -12,6 +12,7 @@ use App\Core\Session;
 use App\Core\Validator;
 use App\Models\UserModel;
 use App\Services\EmailVerificationService;
+use App\Services\TwoFactorService;
 
 final class AuthController extends Controller
 {
@@ -65,6 +66,18 @@ final class AuthController extends Controller
 
         RateLimiter::clear('login', $identifier);
         RateLimiter::clear('login-ip', $request->ip());
+
+        if (TwoFactorService::enabled((int) $user['id'])) {
+            Session::regenerate();
+            Session::set('two_factor_pending', [
+                'user_id' => (int) $user['id'],
+                'email' => (string) $user['email'],
+                'redirect' => $redirect,
+                'started_at' => time(),
+            ]);
+            Response::redirect('masuk/2fa');
+        }
+
         Auth::login($user);
         $this->flashSuccess('Selamat datang kembali, ' . $user['display_name'] . '.');
         Response::redirect($redirect);

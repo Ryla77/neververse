@@ -369,6 +369,7 @@ function icon(string $name, string $class = 'icon'): string
         'login' => '<path d="M15 3h4v18h-4"/><path d="M10 8l4 4-4 4"/><path d="M14 12H3"/>',
         'logout' => '<path d="M9 3H5v18h4"/><path d="M14 8l4 4-4 4"/><path d="M18 12H7"/>',
         'lock' => '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+        'key' => '<circle cx="8" cy="15" r="3.5"/><path d="m10.7 12.3 8.3-8.3"/><path d="m15 4 3 3"/><path d="m12.5 6.5 3 3"/>',
         'mail' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
         'home' => '<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',
         'info' => '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',

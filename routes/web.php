@@ -16,6 +16,7 @@ use App\Controllers\ProfileController;
 use App\Controllers\RatingController;
 use App\Controllers\ReaderController;
 use App\Controllers\ReportController;
+use App\Controllers\TwoFactorController;
 use App\Core\Router;
 
 return static function (Router $router): void {
@@ -36,6 +37,8 @@ return static function (Router $router): void {
     // Autentikasi
     $router->get('/masuk', [AuthController::class, 'loginForm'], ['guest']);
     $router->post('/masuk', [AuthController::class, 'login'], ['guest']);
+    $router->get('/masuk/2fa', [TwoFactorController::class, 'challengeForm']);
+    $router->post('/masuk/2fa', [TwoFactorController::class, 'challenge']);
     $router->get('/daftar', [AuthController::class, 'registerForm'], ['guest']);
     $router->post('/daftar', [AuthController::class, 'register'], ['guest']);
     $router->post('/keluar', [AuthController::class, 'logout'], ['auth']);
@@ -59,6 +62,9 @@ return static function (Router $router): void {
     $router->post('/profil', [ProfileController::class, 'update'], ['auth']);
     $router->post('/profil/kata-sandi', [ProfileController::class, 'updatePassword'], ['auth']);
     $router->post('/profil/jadi-penulis', [ProfileController::class, 'becomeAuthor'], ['auth']);
+    $router->get('/profil/2fa', [TwoFactorController::class, 'setup'], ['auth']);
+    $router->post('/profil/2fa', [TwoFactorController::class, 'enable'], ['auth']);
+    $router->post('/profil/2fa/nonaktif', [TwoFactorController::class, 'disable'], ['auth']);
 
     // Dashboard penulis
     $router->get('/tulis', [AuthorController::class, 'dashboard'], ['role:author|admin']);

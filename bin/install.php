@@ -221,6 +221,7 @@ function write_env(string $path, array $values): void
         'APP_ENV=local',
         'APP_DEBUG=false',
         'APP_TIMEZONE=Asia/Jakarta',
+        'APP_KEY="' . $values['app_key'] . '"',
         '',
         'DB_HOST=' . $values['host'],
         'DB_PORT=' . $values['port'],
@@ -277,6 +278,7 @@ try {
         'name' => $dbName,
         'user' => $dbUser,
         'pass' => $appPass,
+        'app_key' => base64_encode(random_bytes(32)),
     ]);
     echo "File .env dibuat.\n";
 
