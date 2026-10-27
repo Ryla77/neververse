@@ -75,6 +75,11 @@ $items = $result['items'] ?? [];
                                                 </div>
                                             </td>
                                             <td>
+                                                <?php if ((int) ($user['is_verified'] ?? 0) === 1): ?>
+                                                    <span class="badge badge--published">Terverifikasi</span>
+                                                <?php else: ?>
+                                                    <span class="badge badge--muted">Belum verifikasi</span>
+                                                <?php endif; ?>
                                                 <?php if ($isSelf): ?>
                                                     <span class="badge badge--muted"><?= e(role_label((string) $user['role'])) ?></span>
                                                     <span class="badge badge--published">Aktif</span>

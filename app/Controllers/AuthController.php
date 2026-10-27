@@ -11,6 +11,7 @@ use App\Core\Response;
 use App\Core\Session;
 use App\Core\Validator;
 use App\Models\UserModel;
+use App\Services\EmailVerificationService;
 
 final class AuthController extends Controller
 {
@@ -141,7 +142,12 @@ final class AuthController extends Controller
         }
 
         Auth::login($user);
-        $this->flashSuccess('Akun berhasil dibuat. Selamat datang di NovelVerse!');
+        $verificationSent = EmailVerificationService::sendForUser($user);
+        if ($verificationSent) {
+            $this->flashSuccess('Akun berhasil dibuat. Kami mengirim tautan verifikasi ke ' . $user['email'] . '. Periksa kotak masuk atau folder spam.');
+        } else {
+            $this->flashInfo('Akun berhasil dibuat, tetapi email verifikasi belum terkirim. Gunakan tombol kirim ulang pada banner verifikasi.');
+        }
         Response::redirect('/');
     }
 

@@ -217,6 +217,22 @@ function current_user(): ?array
     return \App\Core\Auth::user();
 }
 
+function email_verified(?array $user = null): bool
+{
+    $user ??= current_user();
+    if ($user === null) {
+        return false;
+    }
+
+    static $cache = [];
+    $id = (int) $user['id'];
+    if (!array_key_exists($id, $cache)) {
+        $cache[$id] = \App\Models\EmailVerificationModel::isVerified($id);
+    }
+
+    return $cache[$id];
+}
+
 function format_date(?string $datetime, bool $withTime = false): string
 {
     if ($datetime === null || $datetime === '' || str_starts_with($datetime, '0000-00-00')) {

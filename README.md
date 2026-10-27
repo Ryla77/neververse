@@ -8,7 +8,7 @@ Fitur utama:
 - Katalog novel dengan pencarian judul/penulis, filter genre, pengurutan, dan paginasi.
 - Halaman detail novel: sampul, sinopsis, genre, status, jumlah bab, rating, komentar, dan daftar bab.
 - Pembaca (reader) dengan pengaturan tema baca, ukuran huruf, lebar kolom, jarak paragraf, daftar isi, navigasi bab, dan penyimpanan progres.
-- Registrasi, login, logout, ubah profil, ubah kata sandi, peningkatan peran menjadi penulis, serta lupa/reset kata sandi melalui email dengan transport `file`, `mail()`, atau SMTP ber-TLS.
+- Registrasi, login, logout, verifikasi email, ubah profil, ubah kata sandi, peningkatan peran menjadi penulis, serta lupa/reset kata sandi melalui email dengan transport `file`, `mail()`, atau SMTP ber-TLS. Komentar, rating, dan akses penulis baru aktif setelah email terverifikasi.
 - Perpustakaan pribadi: novel tersimpan, riwayat baca, lanjutkan membaca, dan hapus dari perpustakaan.
 - Dashboard penulis: kelola novel milik sendiri, unggah sampul, tulis/edit bab, draf, publikasi, dan status ongoing/completed.
 - Dashboard admin: statistik, pengguna dan peran, novel, bab, genre, moderasi komentar, serta laporan.
@@ -191,12 +191,13 @@ Konfigurasi dibaca dari `.env` di root proyek. Berkas ini **tidak boleh** di-com
 | `MAIL_HELO` | Nama HELO yang dikirim ke server SMTP | `localhost` |
 | `MAIL_CAFILE` | Path file CA kustom untuk memverifikasi sertifikat SMTP | kosong (CA sistem) |
 | `PASSWORD_RESET_TTL` | Masa berlaku tautan reset (menit, minimal 5) | `60` |
+| `EMAIL_VERIFICATION_TTL` | Masa berlaku tautan verifikasi email (menit, minimal 5) | `1440` |
 
 Kredensial database sebaiknya hanya dimiliki user aplikasi dengan hak pada database `novelverse`, bukan root. Installer sudah melakukan ini.
 
 ## Setup SMTP
 
-SMTP dipakai untuk mengirim tautan reset kata sandi. Aplikasi memakai klien SMTP bawaan tanpa library eksternal, mendukung STARTTLS (`tls`), TLS implisit (`ssl`), serta AUTH PLAIN/LOGIN. Autentikasi hanya dikirim setelah TLS aktif dan sertifikat server selalu diverifikasi.
+SMTP dipakai untuk mengirim tautan verifikasi email dan reset kata sandi. Aplikasi memakai klien SMTP bawaan tanpa library eksternal, mendukung STARTTLS (`tls`), TLS implisit (`ssl`), serta AUTH PLAIN/LOGIN. Autentikasi hanya dikirim setelah TLS aktif dan sertifikat server selalu diverifikasi.
 
 ### 1. Siapkan prasyarat
 
@@ -224,6 +225,8 @@ MAIL_FROM_NAME="NovelVerse"
 # Opsional
 MAIL_TIMEOUT=15
 MAIL_HELO=localhost
+EMAIL_VERIFICATION_TTL=1440
+PASSWORD_RESET_TTL=60
 # MAIL_CAFILE=C:/path/ke/ca.pem
 ```
 
@@ -258,13 +261,13 @@ Contoh di atas dapat berubah; ikuti dokumentasi penyedia. Klien ini mendukung AU
 php tests/smtp-run.php
 ```
 
-Tes ini memakai server SMTP palsu dengan STARTTLS/AUTH dan memeriksa alur reset end-to-end. Hasil sukses tidak membuktikan kredensial penyedia Anda benar; lihat bagian **Tes SMTP end-to-end** untuk prasyaratnya.
+Tes ini memakai server SMTP palsu dengan STARTTLS/AUTH dan memeriksa alur verifikasi email serta reset end-to-end. Hasil sukses tidak membuktikan kredensial penyedia Anda benar; lihat bagian **Tes SMTP end-to-end** untuk prasyaratnya.
 
 **Tes pengiriman nyata:**
 
-1. Jalankan aplikasi dan buka `/lupa-sandi`.
-2. Masukkan email akun yang benar-benar dapat Anda terima.
-3. Periksa kotak masuk/spam, lalu buka tautan reset.
+1. Jalankan aplikasi, lalu daftar akun baru dengan alamat email yang benar-benar dapat Anda terima.
+2. Periksa kotak masuk/spam, buka tautan verifikasi, dan pastikan status akun menjadi terverifikasi.
+3. Uji juga `/lupa-sandi` dengan email tersebut, lalu buka tautan reset.
 4. Jika email tidak datang, periksa `storage/logs/app.log` dan nilai `MAIL_*` di `.env`. Halaman aplikasi tetap menampilkan pesan umum demi keamanan.
 
 ### 6. Checklist produksi
@@ -340,12 +343,16 @@ Jika aplikasi dipasang di subfolder (misalnya `http://localhost/novelverse`), ar
 | `/masuk`, `/daftar` | Login / registrasi | Tamu |
 | `/lupa-sandi` | Minta tautan reset kata sandi via email | Tamu |
 | `/reset-sandi/{token}` | Formulir kata sandi baru dari tautan email | Tamu |
+| `/verifikasi-email/{token}` | Verifikasi email dari tautan | Publik (token) |
+| `/verifikasi-email/kirim-ulang` | Kirim ulang tautan verifikasi (POST) | Login |
 | `/perpustakaan` | Favorit, riwayat, lanjutkan membaca | Login |
 | `/profil` | Profil, ubah nama, kata sandi, jadi penulis | Login |
 | `/tulis` | Dashboard penulis | Penulis/Admin |
 | `/admin` | Dashboard admin | Admin |
 
 Aksi yang mengubah data selalu diperiksa di backend: middleware peran untuk area dashboard, ditambah pemeriksaan kepemilikan record untuk novel/bab penulis. Menyembunyikan tombol di UI bukan satu-satunya kontrol.
+
+Akun yang sudah masuk tetapi emailnya belum terverifikasi tetap dapat membaca dan memakai perpustakaan. Komentar, rating, dan peningkatan peran menjadi penulis ditolak di backend sampai email diverifikasi; banner di bagian atas halaman menyediakan tombol kirim ulang.
 
 Peran:
 
@@ -380,6 +387,27 @@ Pesan kesalahan SMTP tidak memuat kredensial. `MAIL_PASSWORD` hanya berada di `.
 Token disimpan sebagai hash SHA-256, bukan teks asli. Permintaan dibatasi per IP dan per email, dan percobaan memakai token yang salah juga dibatasi.
 
 Jika memperbarui instalasi lama, terapkan tabel `password_resets` dari `database/schema.sql`. Seluruh pernyataan skema memakai `CREATE TABLE IF NOT EXISTS`, sehingga aman dijalankan pada database yang sudah berisi data.
+
+## Verifikasi Email
+
+1. Setelah registrasi, akun langsung masuk tetapi ditandai **belum terverifikasi**. Aplikasi mengirim tautan `/verifikasi-email/{token}` melalui transport email yang aktif.
+2. Tautan berlaku selama `EMAIL_VERIFICATION_TTL` (default 24 jam), hanya dapat dipakai sekali, dan menampilkan halaman hasil yang jelas untuk status berhasil, tidak valid/kedaluwarsa, atau terlalu banyak percobaan.
+3. Banner **Verifikasi email** tampil di bagian atas halaman untuk akun yang belum terverifikasi, lengkap dengan tombol kirim ulang. Kirim ulang dibatasi 3 permintaan per 15 menit per akun dan 10 per jam per IP; akun yang sudah terverifikasi hanya mendapat pesan informasi tanpa pengiriman baru.
+4. Pembatasan ditegakkan di backend: pengguna belum terverifikasi tidak dapat berkomentar, memberi rating, atau mengaktifkan akses penulis. Membaca, perpustakaan, dan progres tetap tersedia.
+5. Mengubah alamat email di profil otomatis membatalkan status verifikasi, menghapus tautan reset kata sandi yang tertunda, dan mengirim tautan verifikasi baru ke alamat tersebut. Perubahan profil lain tidak memengaruhi status verifikasi.
+6. Demo dan akun yang dibuat installer langsung ditandai terverifikasi. Akun yang dinonaktifkan tidak dapat memakai tautan verifikasi.
+
+Token dibuat acak 256-bit dan disimpan hanya sebagai hash SHA-256 di tabel `email_verifications` (satu baris per pengguna). Baris lama yang sudah kedaluwarsa dibersihkan saat token baru diterbitkan.
+
+Jika memperbarui instalasi lama, terapkan tabel `email_verifications` dari `database/schema.sql`, lalu tandai akun yang sudah tepercaya sebagai terverifikasi:
+
+```sql
+INSERT INTO email_verifications (user_id, verified_at, created_at)
+SELECT id, NOW(), NOW() FROM users
+ON DUPLICATE KEY UPDATE verified_at = COALESCE(verified_at, NOW());
+```
+
+Lewati backfill tersebut bila pengguna lama memang harus memverifikasi ulang alamat emailnya.
 
 ## Mengelola Novel dan Bab (Penulis/Admin)
 
@@ -435,14 +463,14 @@ C:\xampp\php\php.exe tests\run.php
 Hasil terakhir pada lingkungan ini:
 
 ```text
-Total pemeriksaan : 157
-Lulus             : 157
+Total pemeriksaan : 176
+Lulus             : 176
 Gagal             : 0
 ```
 
 Ringkasan tersimpan di `tests/last-run.json`; keluaran lengkap di `tests/last-output.txt`. Keduanya artefak tes dan di-gitignore.
 
-Cakupan tes antara lain: koneksi database, halaman publik, registrasi/login/logout, validasi, CSRF, pencarian/filter/urut/paginasi, detail novel, navigasi bab, progres baca, favorit tambah/hapus, komentar dan rating, laporan, unggahan sampul, alur draf hingga publikasi, pembatasan peran, kepemilikan novel, pengelolaan admin, output escaping, header keamanan, serta alur lupa/reset kata sandi (pesan umum, email lokal, hash token, token sekali pakai, token kedaluwarsa, validasi sandi, login dengan sandi baru, dan pembatalan tautan saat sandi diubah).
+Cakupan tes antara lain: koneksi database, halaman publik, registrasi/login/logout, validasi, CSRF, pencarian/filter/urut/paginasi, detail novel, navigasi bab, progres baca, favorit tambah/hapus, komentar dan rating, laporan, unggahan sampul, alur draf hingga publikasi, pembatasan peran, kepemilikan novel, pengelolaan admin, output escaping, header keamanan, verifikasi email (email bertoken, banner, kirim ulang, pembatalan tautan lama, token sekali pakai, token kedaluwarsa, penolakan komentar/rating/akses penulis sebelum verifikasi, dan verifikasi ulang saat email berubah), serta alur lupa/reset kata sandi (pesan umum, email lokal, hash token, token sekali pakai, token kedaluwarsa, validasi sandi, login dengan sandi baru, dan pembatalan tautan saat sandi diubah).
 
 ### Tes SMTP end-to-end
 
@@ -466,13 +494,13 @@ Di Windows:
 C:\xampp\php\php.exe tests\smtp-run.php
 ```
 
-Yang diperiksa: STARTTLS sebelum autentikasi, TLS implisit (`ssl`), AUTH PLAIN dan AUTH LOGIN, verifikasi sertifikat, penolakan kata sandi salah tanpa kebocoran kredensial, pembatalan saat STARTTLS tidak tersedia, penolakan kredensial tanpa TLS, header/encoding pesan, dot-stuffing, tautan reset bertoken, penghapusan token setelah dipakai, dan isolasi dari kotak surat lokal.
+Yang diperiksa: STARTTLS sebelum autentikasi, TLS implisit (`ssl`), AUTH PLAIN dan AUTH LOGIN, verifikasi sertifikat, penolakan kata sandi salah tanpa kebocoran kredensial, pembatalan saat STARTTLS tidak tersedia, penolakan kredensial tanpa TLS, header/encoding pesan, dot-stuffing, email verifikasi beserta tautan yang menandai akun terverifikasi, tautan reset bertoken, penghapusan token setelah dipakai, dan isolasi dari kotak surat lokal.
 
 Hasil terakhir pada lingkungan ini:
 
 ```text
-Total pemeriksaan SMTP : 26
-Lulus                  : 26
+Total pemeriksaan SMTP : 28
+Lulus                  : 28
 Gagal                  : 0
 ```
 
@@ -502,6 +530,8 @@ Pemeriksaan browser tersebut bersifat manual/eksploratif, bukan rangkaian tes ot
 | Sertifikat SMTP gagal diverifikasi | CA internal/self-signed atau nama host tidak cocok | Setel `MAIL_CAFILE` ke CA yang benar dan gunakan hostname yang tercantum di sertifikat |
 | Autentikasi SMTP ditolak (535) | Kata sandi salah, butuh kata sandi aplikasi, atau kredensial dikirim tanpa TLS | Perbaiki kredensial; autentikasi hanya berjalan setelah TLS aktif |
 | Tautan reset tidak valid | Sudah dipakai, kedaluwarsa, atau `APP_URL` salah | Minta tautan baru; pastikan `APP_URL` menunjuk ke instalasi yang benar |
+| Tautan verifikasi tidak valid | Sudah dipakai, kedaluwarsa, atau diganti tautan yang lebih baru | Masuk, lalu gunakan tombol kirim ulang pada banner verifikasi |
+| Komentar/rating/akses penulis ditolak | Email akun belum terverifikasi | Buka tautan verifikasi di email atau kirim ulang dari banner |
 | Unggahan sampul ditolak | Format/ukuran/dimensi tidak memenuhi syarat | Gunakan JPG/PNG/WebP, ≤ 2 MB, ≥ 200×200 |
 | Port 8080 dipakai | Proses lain memakai port | Jalankan di port lain, mis. `php -S 127.0.0.1:8081 -t public public/router.php` |
 | Error izin tulis | Folder `storage`/`uploads` tidak writable | Beri izin tulis kepada user web server |
@@ -516,8 +546,9 @@ Log aplikasi berada di `storage/logs/app.log`. Log tidak diletakkan di folder pu
 - CSRF token global untuk seluruh permintaan yang mengubah data, termasuk permintaan AJAX.
 - Session memakai nama kustom, `HttpOnly`, `SameSite=Lax`, mode ketat, dan ID diregenerasi saat login/perubahan kata sandi; sidik jari sesi terikat pada hash kata sandi sehingga reset oleh admin otomatis membatalkan sesi lama; logout menghancurkan session.
 - Otorisasi dicek di backend: middleware peran + kepemilikan record. Aksi admin/penulis tidak hanya disembunyikan di UI.
-- Rate limit untuk login, registrasi, komentar, rating, laporan, perubahan kata sandi, dan permintaan/penggunaan tautan reset kata sandi.
-- Token reset kata sandi dibuat acak 256-bit, disimpan hanya sebagai hash SHA-256, memiliki masa berlaku, dan dihapus setelah dipakai. Respons permintaan selalu generik agar keberadaan akun tidak dapat ditebak. Tautan yang belum dipakai juga dibatalkan saat kata sandi diubah (mandiri atau oleh admin), email diganti, atau akun dinonaktifkan.
+- Rate limit untuk login, registrasi, komentar, rating, laporan, perubahan kata sandi, permintaan/penggunaan tautan reset kata sandi, serta penggunaan dan pengiriman ulang tautan verifikasi email.
+- Token reset kata sandi dan token verifikasi email dibuat acak 256-bit, disimpan hanya sebagai hash SHA-256, memiliki masa berlaku, dan tidak dapat dipakai ulang. Respons permintaan reset selalu generik agar keberadaan akun tidak dapat ditebak. Tautan reset yang belum dipakai dibatalkan saat kata sandi diubah (mandiri atau oleh admin), email diganti, atau akun dinonaktifkan.
+- Verifikasi email ditegakkan di backend, bukan hanya lewat tampilan: komentar, rating, dan peningkatan peran penulis menolak akun yang belum terverifikasi. Mengganti email membatalkan status verifikasi dan memaksa verifikasi ulang alamat baru.
 - Transport SMTP memverifikasi sertifikat server (TLS 1.2/1.3, `verify_peer` dan `verify_peer_name` aktif), mewajibkan STARTTLS pada mode `tls`, menolak kredensial tanpa TLS, serta tidak menuliskan kata sandi ke pesan kesalahan atau log.
 - Unggahan divalidasi tipe isi, ukuran, dan dimensi; nama file diacak; eksekusi PHP di folder unggahan dinonaktifkan.
 - Header keamanan: CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, dan `Permissions-Policy`.
@@ -528,7 +559,7 @@ Aplikasi belum diaudit oleh pihak ketiga. Pengujian yang dilakukan adalah tes in
 
 ## Batasan yang Diketahui
 
-- Belum ada verifikasi email atau 2FA. Reset kata sandi mandiri melalui email sudah tersedia; reset oleh admin tetap dapat dilakukan.
+- Belum ada 2FA. Verifikasi email tersedia, tetapi akun yang belum terverifikasi tetap dapat login dan membaca; hanya komentar, rating, dan peningkatan peran penulis yang dibatasi. Reset kata sandi mandiri melalui email tersedia; reset oleh admin tetap dapat dilakukan.
 - Transport email `file` dan `smtp` diuji di lingkungan ini. SMTP diuji terhadap server lokal dengan STARTTLS dan AUTH, bukan terhadap penyedia eksternal seperti Gmail atau Outlook. Pengiriman nyata, reputasi domain, SPF/DKIM, bounce, dan spam filter tidak diuji di sini. Transport `mail()` tetap bergantung pada konfigurasi MTA server.
 - Unggahan gambar tidak di-re-encode (GD tidak tersedia di lingkungan ini); validasi mengandalkan `finfo` dan `getimagesize`.
 - CSP mengizinkan `style-src 'unsafe-inline'` karena beberapa gaya ditulis inline.

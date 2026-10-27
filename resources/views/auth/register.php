@@ -73,7 +73,7 @@ use App\Core\View;
                     </div>
                 </div>
 
-                <p class="form-hint"><?= icon('info', 'icon icon--xs') ?> Gunakan minimal 8 karakter. Jangan gunakan kata sandi yang sama dengan situs lain.</p>
+                <p class="form-hint"><?= icon('info', 'icon icon--xs') ?> Gunakan minimal 8 karakter. Kami akan mengirim tautan verifikasi ke email ini. Jangan gunakan kata sandi yang sama dengan situs lain.</p>
 
                 <button class="btn btn--primary btn--block btn--lg" type="submit"><?= icon('user', 'icon icon--sm') ?>Buat akun</button>
             </form>

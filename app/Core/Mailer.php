@@ -28,6 +28,29 @@ final class Mailer
         self::send($to, $subject, $body);
     }
 
+    public static function sendEmailVerification(string $to, string $displayName, string $verifyUrl, int $ttlMinutes): void
+    {
+        $name = trim(preg_replace('/[\r\n]+/u', ' ', $displayName) ?? '');
+        if ($name === '') {
+            $name = 'Pengguna';
+        }
+        $appName = (string) config('app.name', 'NovelVerse');
+        $ttlMinutes = max(5, $ttlMinutes);
+        $duration = $ttlMinutes % 60 === 0
+            ? intdiv($ttlMinutes, 60) . ' jam'
+            : $ttlMinutes . ' menit';
+
+        $subject = 'Verifikasi email ' . $appName;
+        $body = "Halo {$name},\r\n\r\n"
+            . "Terima kasih telah mendaftar di {$appName}. Konfirmasi alamat email Anda dengan membuka tautan berikut. Tautan berlaku {$duration} dan hanya dapat digunakan sekali:\r\n\r\n"
+            . $verifyUrl . "\r\n\r\n"
+            . "Setelah email terverifikasi, Anda dapat berkomentar, memberi rating, dan mengaktifkan akses penulis.\r\n\r\n"
+            . "Jika Anda tidak membuat akun ini, abaikan email ini.\r\n\r\n"
+            . "Salam,\r\n{$appName}\r\n";
+
+        self::send($to, $subject, $body);
+    }
+
     public static function send(string $to, string $subject, string $body): void
     {
         if (filter_var($to, FILTER_VALIDATE_EMAIL) === false) {

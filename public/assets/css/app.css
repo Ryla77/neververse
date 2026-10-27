@@ -1151,6 +1151,14 @@ html[data-theme="light"] .theme-toggle__sun {
     color: var(--text);
 }
 
+.verify-banner {
+    margin-top: 1rem;
+}
+
+.verify-banner__form {
+    margin-top: 0.7rem;
+}
+
 .alert--success {
     border-color: rgba(110, 231, 168, 0.3);
 }
@@ -3497,6 +3505,11 @@ html[data-theme="light"] .cta-band {
     border-radius: var(--radius-xl);
     background: var(--panel);
     box-shadow: var(--shadow-lg);
+}
+
+.auth-shell--single {
+    grid-template-columns: 1fr;
+    max-width: 560px;
 }
 
 .auth-aside {

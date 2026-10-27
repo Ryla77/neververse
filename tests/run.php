@@ -214,6 +214,42 @@ function dbCount(string $sql, array $params = []): int
     return (int) Database::fetchColumn($sql, $params);
 }
 
+/**
+ * @return array{file:string, raw:string}
+ */
+function mailFor(string $directory, string $email, string $needle): array
+{
+    $files = glob($directory . '/*.eml') ?: [];
+    rsort($files);
+    foreach ($files as $file) {
+        $raw = (string) file_get_contents($file);
+        if (str_contains($raw, 'To: ' . $email) && str_contains($raw, $needle)) {
+            return ['file' => $file, 'raw' => $raw];
+        }
+    }
+
+    return ['file' => '', 'raw' => ''];
+}
+
+/**
+ * @return list<string>
+ */
+function verificationTokensFor(string $directory, string $email): array
+{
+    $tokens = [];
+    foreach (glob($directory . '/*.eml') ?: [] as $file) {
+        $raw = (string) file_get_contents($file);
+        if (!str_contains($raw, 'To: ' . $email)) {
+            continue;
+        }
+        if (preg_match('#/verifikasi-email/([a-f0-9]{64})#', $raw, $match) === 1) {
+            $tokens[] = $match[1];
+        }
+    }
+
+    return array_values(array_unique($tokens));
+}
+
 function makePng(string $path, int $width, int $height): void
 {
     $chunk = static function (string $type, string $data): string {
@@ -256,6 +292,8 @@ $testEmail = 'uji.' . $suffix . '@example.test';
 $testPassword = 'RahasiaUji!' . $suffix;
 $newPassword = 'RahasiaBaru!' . $suffix;
 $testDisplay = 'Pembaca Uji ' . $suffix;
+$pendingEmail = 'tertunda.' . $suffix . '@example.test';
+$pendingEmail2 = 'tertunda2.' . $suffix . '@example.test';
 
 $admin = $demo['admin'][0] ?? ['email' => '', 'password' => ''];
 $author = $demo['penulis'][0] ?? ['email' => '', 'password' => ''];
@@ -283,6 +321,7 @@ $draftCommentId = null;
 $reportId = null;
 $genreId = null;
 $testUserId = null;
+$pendingUserId = null;
 $mailFilesCreated = [];
 
 try {
@@ -433,6 +472,211 @@ try {
 
     $loggedHome = $http->request('newreader', 'GET', '/');
     check('Sesi login aktif setelah registrasi', str_contains($loggedHome['body'], $testDisplay) && str_contains($loggedHome['body'], 'Keluar'));
+
+    /* ----------------------------------------------------------------------
+       Verifikasi email: pengiriman, banner, kirim ulang, dan batas backend
+       ---------------------------------------------------------------------- */
+
+    $mailDir = BASE_PATH . '/storage/mail';
+    $registrationMail = mailFor($mailDir, $testEmail, '/verifikasi-email/');
+    if ($registrationMail['file'] !== '') {
+        $mailFilesCreated[] = $registrationMail['file'];
+    }
+    preg_match('#/verifikasi-email/([a-f0-9]{64})#', $registrationMail['raw'], $verificationMatch);
+    $verificationToken = $verificationMatch[1] ?? '';
+    $verificationRow = Database::fetch('SELECT token_hash, verified_at FROM email_verifications WHERE user_id = ?', [$testUserId]);
+    check(
+        'Registrasi mengirim email verifikasi bertoken',
+        $verificationToken !== ''
+            && str_contains($registrationMail['raw'], 'To: ' . $testEmail)
+            && $verificationRow !== null
+            && $verificationRow['token_hash'] === hash('sha256', $verificationToken)
+            && $verificationRow['verified_at'] === null
+    );
+    check(
+        'Pesan sukses registrasi menyebut tautan verifikasi',
+        str_contains($postLoginHome['body'], 'Kami mengirim tautan verifikasi')
+    );
+    check(
+        'Banner verifikasi tampil untuk akun yang belum terverifikasi',
+        str_contains($loggedHome['body'], 'verifikasi-email/kirim-ulang')
+    );
+
+    $unverifiedComment = postWith($http, 'newreader', '/novel/' . $publishedNovel['slug'] . '/komentar', ['content' => 'Komentar sebelum verifikasi ' . $suffix]);
+    $unverifiedCommentPage = follow($http, 'newreader', $unverifiedComment);
+    check(
+        'Komentar ditolak sebelum email terverifikasi',
+        $unverifiedComment['status'] === 302
+            && locationIs($unverifiedComment, '/novel/' . $publishedNovel['slug'])
+            && str_contains($unverifiedCommentPage['body'], 'Verifikasi email Anda terlebih dahulu')
+            && dbCount('SELECT COUNT(*) FROM comments WHERE user_id = ?', [$testUserId]) === 0
+    );
+
+    $unverifiedRating = postWith($http, 'newreader', '/novel/' . $publishedNovel['slug'] . '/rating', ['rating' => '5']);
+    check(
+        'Rating ditolak sebelum email terverifikasi',
+        $unverifiedRating['status'] === 302
+            && locationIs($unverifiedRating, '/novel/' . $publishedNovel['slug'])
+            && dbCount('SELECT COUNT(*) FROM ratings WHERE user_id = ?', [$testUserId]) === 0
+    );
+
+    $unverifiedAuthor = postWith($http, 'newreader', '/profil/jadi-penulis', []);
+    $unverifiedAuthorPage = follow($http, 'newreader', $unverifiedAuthor);
+    $roleBeforeVerification = Database::fetch('SELECT role FROM users WHERE id = ?', [$testUserId]);
+    check(
+        'Akses penulis ditolak sebelum email terverifikasi',
+        $unverifiedAuthor['status'] === 302
+            && locationIs($unverifiedAuthor, '/profil')
+            && str_contains($unverifiedAuthorPage['body'], 'Verifikasi email Anda terlebih dahulu')
+            && $roleBeforeVerification['role'] === 'reader'
+    );
+
+    $tokensBeforeResend = verificationTokensFor($mailDir, $testEmail);
+    $resendVerification = postWith($http, 'newreader', '/verifikasi-email/kirim-ulang', ['redirect' => '/']);
+    $resendPage = follow($http, 'newreader', $resendVerification);
+    $tokensAfterResend = verificationTokensFor($mailDir, $testEmail);
+    $resentToken = array_values(array_diff($tokensAfterResend, $tokensBeforeResend))[0] ?? '';
+    $resentRow = Database::fetch('SELECT token_hash FROM email_verifications WHERE user_id = ?', [$testUserId]);
+    check(
+        'Kirim ulang menerbitkan tautan baru dan membatalkan tautan lama',
+        $resendVerification['status'] === 302
+            && locationIs($resendVerification, '/')
+            && str_contains($resendPage['body'], 'Tautan verifikasi telah dikirim')
+            && $resentToken !== ''
+            && $resentToken !== $verificationToken
+            && $resentRow !== null
+            && $resentRow['token_hash'] === hash('sha256', $resentToken)
+    );
+
+    $staleTokenPage = $http->request('newreader', 'GET', '/verifikasi-email/' . $verificationToken);
+    check(
+        'Tautan verifikasi lama tidak dapat digunakan',
+        $staleTokenPage['status'] === 200 && str_contains($staleTokenPage['body'], 'Tautan tidak dapat digunakan')
+    );
+
+    $verifiedPage = $http->request('newreader', 'GET', '/verifikasi-email/' . $resentToken);
+    $verifiedRow = Database::fetch('SELECT verified_at, token_hash FROM email_verifications WHERE user_id = ?', [$testUserId]);
+    check(
+        'Tautan verifikasi menandai email terverifikasi',
+        $verifiedPage['status'] === 200
+            && str_contains($verifiedPage['body'], 'Email berhasil diverifikasi')
+            && $verifiedRow !== null
+            && $verifiedRow['verified_at'] !== null
+            && $verifiedRow['token_hash'] === null
+    );
+    check(
+        'Banner verifikasi hilang setelah email terverifikasi',
+        !str_contains($http->request('newreader', 'GET', '/')['body'], 'verifikasi-email/kirim-ulang')
+    );
+    check(
+        'Profil menampilkan status email terverifikasi',
+        str_contains($http->request('newreader', 'GET', '/profil')['body'], 'Terverifikasi')
+    );
+
+    $reuseVerification = $http->request('newreader', 'GET', '/verifikasi-email/' . $resentToken);
+    check(
+        'Tautan verifikasi hanya dapat dipakai sekali',
+        $reuseVerification['status'] === 200 && str_contains($reuseVerification['body'], 'Tautan tidak dapat digunakan')
+    );
+
+    $mailCountBeforeVerifiedResend = count(glob($mailDir . '/*.eml') ?: []);
+    $verifiedResend = postWith($http, 'newreader', '/verifikasi-email/kirim-ulang', ['redirect' => '/profil']);
+    $verifiedResendPage = follow($http, 'newreader', $verifiedResend);
+    check(
+        'Kirim ulang diabaikan untuk akun yang sudah terverifikasi',
+        $verifiedResend['status'] === 302
+            && locationIs($verifiedResend, '/profil')
+            && str_contains($verifiedResendPage['body'], 'Email Anda sudah terverifikasi')
+            && count(glob($mailDir . '/*.eml') ?: []) === $mailCountBeforeVerifiedResend
+    );
+
+    /* ----------------------------------------------------------------------
+       Verifikasi ulang saat email berubah dan tautan kedaluwarsa
+       ---------------------------------------------------------------------- */
+
+    $pendingDisplay = 'Pembaca Tertunda ' . $suffix;
+    $pendingPassword = 'RahasiaTertunda!' . $suffix;
+    $pendingRegister = postWith($http, 'pendingreader', '/daftar', [
+        'display_name' => $pendingDisplay,
+        'email' => $pendingEmail,
+        'password' => $pendingPassword,
+        'password_confirm' => $pendingPassword,
+    ]);
+    $pendingUser = Database::fetch('SELECT id FROM users WHERE email = ?', [$pendingEmail]);
+    $pendingUserId = $pendingUser !== null ? (int) $pendingUser['id'] : null;
+    $pendingMail = mailFor($mailDir, $pendingEmail, '/verifikasi-email/');
+    if ($pendingMail['file'] !== '') {
+        $mailFilesCreated[] = $pendingMail['file'];
+    }
+    preg_match('#/verifikasi-email/([a-f0-9]{64})#', $pendingMail['raw'], $pendingMatch);
+    $pendingToken = $pendingMatch[1] ?? '';
+    check(
+        'Registrasi akun kedua mengirim tautan verifikasi terpisah',
+        $pendingRegister['status'] === 302
+            && locationIs($pendingRegister, '/')
+            && $pendingUserId !== null
+            && $pendingToken !== ''
+    );
+
+    $pendingVerifiedPage = $http->request('pendingreader', 'GET', '/verifikasi-email/' . $pendingToken);
+    check(
+        'Akun kedua dapat memverifikasi email melalui tautan',
+        $pendingVerifiedPage['status'] === 200
+            && str_contains($pendingVerifiedPage['body'], 'Email berhasil diverifikasi')
+            && Database::fetch('SELECT verified_at FROM email_verifications WHERE user_id = ?', [$pendingUserId])['verified_at'] !== null
+    );
+
+    $tokens = [];
+    $pendingProfileToken = tokenFor($http, 'pendingreader', '/profil');
+    $changeEmail = $http->request('pendingreader', 'POST', '/profil', [
+        '_token' => $pendingProfileToken,
+        'display_name' => $pendingDisplay,
+        'email' => $pendingEmail2,
+        'bio' => 'Uji verifikasi ulang.',
+    ]);
+    $pendingMail2 = mailFor($mailDir, $pendingEmail2, '/verifikasi-email/');
+    if ($pendingMail2['file'] !== '') {
+        $mailFilesCreated[] = $pendingMail2['file'];
+    }
+    preg_match('#/verifikasi-email/([a-f0-9]{64})#', $pendingMail2['raw'], $pendingMatch2);
+    $pendingToken2 = $pendingMatch2[1] ?? '';
+    $pendingRow2 = Database::fetch('SELECT verified_at, token_hash FROM email_verifications WHERE user_id = ?', [$pendingUserId]);
+    $pendingEmailRow = Database::fetch('SELECT email FROM users WHERE id = ?', [$pendingUserId]);
+    check(
+        'Mengubah email membatalkan status verifikasi dan mengirim tautan baru',
+        $changeEmail['status'] === 302
+            && locationIs($changeEmail, '/profil')
+            && $pendingToken2 !== ''
+            && $pendingRow2 !== null
+            && $pendingRow2['verified_at'] === null
+            && $pendingRow2['token_hash'] === hash('sha256', $pendingToken2)
+            && $pendingEmailRow !== null
+            && (string) $pendingEmailRow['email'] === $pendingEmail2
+    );
+
+    Database::execute('UPDATE email_verifications SET expires_at = (NOW() - INTERVAL 1 MINUTE) WHERE user_id = ?', [$pendingUserId]);
+    $expiredVerificationPage = $http->request('pendingreader', 'GET', '/verifikasi-email/' . $pendingToken2);
+    check(
+        'Tautan verifikasi kedaluwarsa ditolak',
+        $expiredVerificationPage['status'] === 200
+            && str_contains($expiredVerificationPage['body'], 'Tautan tidak dapat digunakan')
+            && Database::fetch('SELECT verified_at FROM email_verifications WHERE user_id = ?', [$pendingUserId])['verified_at'] === null
+    );
+
+    $pendingTokensBefore = verificationTokensFor($mailDir, $pendingEmail2);
+    $pendingResend = postWith($http, 'pendingreader', '/verifikasi-email/kirim-ulang', ['redirect' => '/profil']);
+    $pendingTokensAfter = verificationTokensFor($mailDir, $pendingEmail2);
+    $pendingToken3 = array_values(array_diff($pendingTokensAfter, $pendingTokensBefore))[0] ?? '';
+    $pendingVerifiedAgain = $http->request('pendingreader', 'GET', '/verifikasi-email/' . $pendingToken3);
+    check(
+        'Kirim ulang memulihkan verifikasi setelah tautan kedaluwarsa',
+        $pendingResend['status'] === 302
+            && $pendingToken3 !== ''
+            && $pendingToken3 !== $pendingToken2
+            && $pendingVerifiedAgain['status'] === 200
+            && str_contains($pendingVerifiedAgain['body'], 'Email berhasil diverifikasi')
+            && Database::fetch('SELECT verified_at FROM email_verifications WHERE user_id = ?', [$pendingUserId])['verified_at'] !== null
+    );
 
     /* ----------------------------------------------------------------------
        Peran dan batas akses pembaca
@@ -752,6 +996,10 @@ try {
         $response = $http->request('admin', 'GET', $adminPage);
         check('Halaman admin ' . $adminPage . ' merespons 200', $response['status'] === 200);
     }
+    check(
+        'Daftar pengguna admin menampilkan status verifikasi',
+        str_contains($http->request('admin', 'GET', '/admin/pengguna')['body'], 'Terverifikasi')
+    );
 
     check('Penulis tidak dapat membuka dashboard admin', $http->request('author', 'GET', '/admin')['status'] === 403);
 
@@ -1067,9 +1315,14 @@ try {
         Database::execute('DELETE FROM password_resets WHERE user_id = ?', [$testUserId]);
         Database::execute('DELETE FROM users WHERE id = ?', [$testUserId]);
     }
+    if ($pendingUserId !== null) {
+        Database::execute('DELETE FROM users WHERE id = ?', [$pendingUserId]);
+    }
     foreach (glob(BASE_PATH . '/storage/mail/*.eml') ?: [] as $mailFile) {
         $mailContent = (string) file_get_contents($mailFile);
-        if (str_contains($mailContent, 'To: ' . $testEmail)) {
+        if (str_contains($mailContent, 'To: ' . $testEmail)
+            || str_contains($mailContent, 'To: ' . $pendingEmail)
+            || str_contains($mailContent, 'To: ' . $pendingEmail2)) {
             @unlink($mailFile);
         }
     }

@@ -7,6 +7,7 @@ use App\Controllers\AuthController;
 use App\Controllers\AuthorController;
 use App\Controllers\BookmarkController;
 use App\Controllers\CommentController;
+use App\Controllers\EmailVerificationController;
 use App\Controllers\HomeController;
 use App\Controllers\LibraryController;
 use App\Controllers\NovelController;
@@ -44,6 +45,10 @@ return static function (Router $router): void {
     $router->post('/lupa-sandi', [PasswordResetController::class, 'send'], ['guest']);
     $router->get('/reset-sandi/{token}', [PasswordResetController::class, 'resetForm'], ['guest']);
     $router->post('/reset-sandi', [PasswordResetController::class, 'reset'], ['guest']);
+
+    // Verifikasi email
+    $router->get('/verifikasi-email/{token}', [EmailVerificationController::class, 'verify']);
+    $router->post('/verifikasi-email/kirim-ulang', [EmailVerificationController::class, 'resend'], ['auth']);
 
     // Perpustakaan
     $router->get('/perpustakaan', [LibraryController::class, 'index'], ['auth']);

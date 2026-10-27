@@ -308,6 +308,9 @@ try {
         'INSERT INTO users (email, password_hash, display_name, role, is_active, created_at)
          VALUES (?, ?, ?, ?, 1, NOW())'
     );
+    $markVerified = $pdo->prepare(
+        'INSERT INTO email_verifications (user_id, verified_at, created_at) VALUES (?, NOW(), NOW())'
+    );
     foreach ($accounts as $account) {
         $insert->execute([
             $account['email'],
@@ -315,6 +318,7 @@ try {
             $account['name'],
             $account['role'],
         ]);
+        $markVerified->execute([(int) $pdo->lastInsertId()]);
     }
     echo "Akun admin dan akun demo dibuat.\n";
 

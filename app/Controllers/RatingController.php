@@ -19,6 +19,10 @@ final class RatingController extends Controller
         if ($novel === null) {
             abort(404);
         }
+        if (!email_verified()) {
+            $this->flashError('Verifikasi email Anda terlebih dahulu sebelum memberi rating.');
+            Response::redirect('novel/' . $novel['slug'] . '#rating');
+        }
 
         $userId = (int) Auth::id();
         if (RateLimiter::tooMany('rating', (string) $userId, 30, 3600)) {

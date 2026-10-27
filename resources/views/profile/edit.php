@@ -197,6 +197,7 @@ $historyUrl = static function (array $item): string {
                 </div>
                 <dl class="meta-list">
                     <div><dt>Peran</dt><dd><span class="badge badge--gold"><?= e(role_label((string) $user['role'])) ?></span></dd></div>
+                    <div><dt>Email</dt><dd><?php if (email_verified($user)): ?><span class="badge badge--published">Terverifikasi</span><?php else: ?><span class="badge badge--muted">Belum terverifikasi</span><?php endif; ?></dd></div>
                     <div><dt>Status</dt><dd><?= (int) $user['is_active'] === 1 ? 'Aktif' : 'Nonaktif' ?></dd></div>
                     <div><dt>Bergabung</dt><dd><?= e(format_date((string) $user['created_at'])) ?></dd></div>
                     <div><dt>Login terakhir</dt><dd><?= $user['last_login_at'] !== null ? e(format_date((string) $user['last_login_at'], true)) : '—' ?></dd></div>

@@ -190,6 +190,25 @@ function mailFiles(string $directory): array
 }
 
 /**
+ * @return array{file:string, raw:string}
+ */
+function mailContaining(string $directory, string $needle, string $recipient, float $timeout = 8.0): array
+{
+    $deadline = microtime(true) + $timeout;
+    do {
+        foreach (mailFiles($directory) as $file) {
+            $raw = (string) file_get_contents($file);
+            if (str_contains($raw, $needle) && str_contains($raw, 'To: ' . $recipient)) {
+                return ['file' => $file, 'raw' => $raw];
+            }
+        }
+        usleep(100000);
+    } while (microtime(true) < $deadline);
+
+    return ['file' => '', 'raw' => ''];
+}
+
+/**
  * @return array{raw:string, headers:string, body:string}
  */
 function parseMessage(string $file): array
@@ -550,6 +569,34 @@ CNF
     $row = Database::fetch('SELECT id FROM users WHERE email = ?', [$testEmail]);
     $testUserId = $row !== null ? (int) $row['id'] : null;
 
+    $mailDir = $fake['dir'] . '/mail';
+    $verificationMail = mailContaining($mailDir, '/verifikasi-email/', $testEmail);
+    preg_match('#/verifikasi-email/([a-f0-9]{64})#', quoted_printable_decode($verificationMail['raw']), $verificationMatch);
+    $verificationToken = $verificationMatch[1] ?? '';
+    $verificationStored = $testUserId !== null
+        ? Database::fetch('SELECT token_hash, verified_at FROM email_verifications WHERE user_id = ?', [$testUserId])
+        : null;
+    check(
+        'Registrasi mengirim email verifikasi melalui SMTP',
+        $verificationToken !== ''
+            && $verificationStored !== null
+            && $verificationStored['token_hash'] === hash('sha256', $verificationToken)
+            && $verificationStored['verified_at'] === null
+    );
+
+    $verifyPage = $http->request('guest', 'GET', '/verifikasi-email/' . $verificationToken);
+    $verificationAfter = $testUserId !== null
+        ? Database::fetch('SELECT verified_at, token_hash FROM email_verifications WHERE user_id = ?', [$testUserId])
+        : null;
+    check(
+        'Tautan verifikasi dari email SMTP menandai akun terverifikasi',
+        $verifyPage['status'] === 200
+            && str_contains($verifyPage['body'], 'Email berhasil diverifikasi')
+            && $verificationAfter !== null
+            && $verificationAfter['verified_at'] !== null
+            && $verificationAfter['token_hash'] === null
+    );
+
     $forgotPage = $http->request('guest', 'GET', '/lupa-sandi');
     check('Halaman lupa kata sandi dapat dimuat', $forgotPage['status'] === 200);
 
@@ -559,18 +606,8 @@ CNF
         $forgot['status'] === 302 && pathOf($forgot['location']) === '/lupa-sandi'
     );
 
-    $mailDir = $fake['dir'] . '/mail';
-    $emailFile = '';
-    $deadline = microtime(true) + 8.0;
-    do {
-        $files = mailFiles($mailDir);
-        if ($files !== []) {
-            $emailFile = end($files);
-            break;
-        }
-        usleep(100000);
-    } while (microtime(true) < $deadline);
-
+    $resetMail = mailContaining($mailDir, '/reset-sandi/', $testEmail);
+    $emailFile = $resetMail['file'];
     check('Server SMTP menerima email reset dari aplikasi', $emailFile !== '');
 
     $sessionLog = (string) file_get_contents($fake['log']);

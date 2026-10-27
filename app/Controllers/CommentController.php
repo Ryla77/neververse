@@ -20,6 +20,10 @@ final class CommentController extends Controller
         if ($novel === null) {
             abort(404);
         }
+        if (!email_verified()) {
+            $this->flashError('Verifikasi email Anda terlebih dahulu sebelum berkomentar.');
+            Response::redirect('novel/' . $novel['slug'] . '#komentar');
+        }
 
         $userId = (int) Auth::id();
         if (RateLimiter::tooMany('comment', (string) $userId, 10, 600)) {

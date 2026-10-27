@@ -162,6 +162,22 @@ $hideFooter = (bool) ($hideFooter ?? false);
 
 <main id="konten" class="site-main">
     <?php \App\Core\View::partial('partials/flash'); ?>
+    <?php if ($user !== null && !email_verified($user)): ?>
+        <div class="container">
+            <div class="alert alert--info verify-banner" role="status">
+                <span class="alert__icon"><?= icon('mail') ?></span>
+                <div class="alert__body">
+                    <span class="alert__label">Verifikasi email</span>
+                    <p>Kami mengirim tautan verifikasi ke <strong><?= e($user['email']) ?></strong>. Verifikasi email untuk mengaktifkan komentar, rating, dan akses penulis.</p>
+                    <form class="verify-banner__form" action="<?= e(url('verifikasi-email/kirim-ulang')) ?>" method="post">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="redirect" value="<?= e(request_path()) ?>">
+                        <button class="btn btn--soft btn--xs" type="submit">Kirim ulang email verifikasi</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
     <?= $content ?>
 </main>
 

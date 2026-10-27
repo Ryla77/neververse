@@ -46,4 +46,7 @@ return [
     'password_reset' => [
         'ttl_minutes' => max(5, (int) env('PASSWORD_RESET_TTL', 60)),
     ],
+    'email_verification' => [
+        'ttl_minutes' => max(5, (int) env('EMAIL_VERIFICATION_TTL', 1440)),
+    ],
 ];

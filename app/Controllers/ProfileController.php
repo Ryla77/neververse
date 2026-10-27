@@ -15,6 +15,7 @@ use App\Models\BookmarkModel;
 use App\Models\PasswordResetModel;
 use App\Models\ReadingProgressModel;
 use App\Models\UserModel;
+use App\Services\EmailVerificationService;
 
 final class ProfileController extends Controller
 {
@@ -59,8 +60,9 @@ final class ProfileController extends Controller
 
         try {
             $current = UserModel::find($userId);
+            $emailChanged = $current === null || mb_strtolower((string) $current['email']) !== $data['email'];
             UserModel::updateProfile($userId, $data['display_name'], $data['email'], $data['bio'] !== '' ? $data['bio'] : null);
-            if ($current === null || mb_strtolower((string) $current['email']) !== $data['email']) {
+            if ($emailChanged) {
                 PasswordResetModel::deleteForUser($userId);
             }
         } catch (\PDOException $e) {
@@ -72,6 +74,18 @@ final class ProfileController extends Controller
         }
 
         Auth::refresh();
+
+        if ($emailChanged) {
+            $updated = UserModel::find($userId);
+            $sent = $updated !== null && EmailVerificationService::sendForUser($updated);
+            if ($sent) {
+                $this->flashSuccess('Profil diperbarui. Kami mengirim tautan verifikasi ke email baru Anda.');
+            } else {
+                $this->flashInfo('Profil diperbarui, tetapi email verifikasi belum terkirim. Gunakan tombol kirim ulang pada banner verifikasi.');
+            }
+            Response::redirect('profil');
+        }
+
         $this->flashSuccess('Profil berhasil diperbarui.');
         Response::redirect('profil');
     }
@@ -127,6 +141,10 @@ final class ProfileController extends Controller
         }
         if ($user['role'] !== 'reader') {
             $this->flashInfo('Akunmu sudah memiliki akses menulis.');
+            Response::redirect('profil');
+        }
+        if (!email_verified($user)) {
+            $this->flashError('Verifikasi email Anda terlebih dahulu sebelum mengaktifkan akses penulis.');
             Response::redirect('profil');
         }
 

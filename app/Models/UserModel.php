@@ -89,14 +89,17 @@ final class UserModel
         $query = trim($query);
         if ($query !== '') {
             $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query) . '%';
-            $where = 'WHERE email LIKE ? OR display_name LIKE ?';
+            $where = 'WHERE u.email LIKE ? OR u.display_name LIKE ?';
             $params = [$like, $like];
         }
-        $total = (int) Database::fetchColumn('SELECT COUNT(*) FROM users ' . $where, $params);
+        $total = (int) Database::fetchColumn('SELECT COUNT(*) FROM users u ' . $where, $params);
         $items = Database::fetchAll(
-            "SELECT id, email, display_name, role, bio, is_active, last_login_at, created_at
-             FROM users {$where}
-             ORDER BY created_at DESC
+            "SELECT u.id, u.email, u.display_name, u.role, u.bio, u.is_active, u.last_login_at, u.created_at,
+                    (ev.verified_at IS NOT NULL) AS is_verified
+             FROM users u
+             LEFT JOIN email_verifications ev ON ev.user_id = u.id
+             {$where}
+             ORDER BY u.created_at DESC
              LIMIT {$perPage} OFFSET {$offset}",
             $params
         );
