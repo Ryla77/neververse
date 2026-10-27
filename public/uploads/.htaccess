@@ -1,0 +1,8 @@
+# Direktori unggahan tidak boleh mengeksekusi skrip apa pun.
+Options -Indexes -ExecCGI
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phar
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phar
+
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phar|pl|py|cgi|sh|htaccess|ini)$">
+    Require all denied
+</FilesMatch>

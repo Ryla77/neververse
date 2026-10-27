@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-label="Sampul novel FANTASI">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b0d12"/>
+      <stop offset="1" stop-color="#451322"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="34%" r="55%">
+      <stop offset="0" stop-color="#ff9d5c" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#ff9d5c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="spine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity=".45"/>
+      <stop offset=".18" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect width="600" height="900" fill="url(#glow)"/>
+  <rect width="600" height="900" filter="url(#grain)" opacity=".045"/>
+  <rect width="600" height="900" fill="url(#spine)"/>
+  <rect x="26" y="26" width="548" height="848" rx="18" fill="none" stroke="#ff9d5c" stroke-opacity=".28"/>
+  <path d="M26 130h548" stroke="#ff9d5c" stroke-opacity=".22"/>
+  <text x="300" y="92" text-anchor="middle" font-family="Segoe UI, Helvetica, sans-serif" font-size="15" letter-spacing="7" fill="#ff9d5c" fill-opacity=".85">FANTASI</text>
+  <text x="300" y="152" text-anchor="middle" font-family="Segoe UI, Helvetica, sans-serif" font-size="12" letter-spacing="5" fill="#f7f2e8" fill-opacity=".55">NOVELVERSE</text>
+  <circle cx="300" cy="300" r="148" fill="none" stroke="#ff9d5c" stroke-opacity=".2"/>
+<path d="M300 186c28 52 74 70 74 122a74 74 0 0 1-148 0c0-34 20-54 36-78 10 18 18 26 26 30-4-28-2-50 12-74Z" fill="#ff9d5c" fill-opacity=".14" stroke="#ff9d5c" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M300 272c14 26 32 36 32 60a32 32 0 0 1-64 0c0-18 12-28 20-40 4 8 8 12 12 14-2-14 0-24 0-34Z" fill="#ff9d5c" fill-opacity=".45"/>
+<path d="M300 136v18M196 220l14 12M404 220l-14 12" stroke="#ff9d5c" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+  <text x="300" y="566" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="54" font-weight="700" fill="#f7f2e8" letter-spacing="0.5">Penjaga</text><text x="300" y="632" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="54" font-weight="700" fill="#f7f2e8" letter-spacing="0.5">Api</text><text x="300" y="698" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="54" font-weight="700" fill="#f7f2e8" letter-spacing="0.5">Terakhir</text>
+  <path d="M250 838h100" stroke="#ff9d5c" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+  <text x="300" y="868" text-anchor="middle" font-family="Segoe UI, Helvetica, sans-serif" font-size="13" letter-spacing="2.5" fill="#f7f2e8" fill-opacity=".78">SEKAR AYU LESTARI</text>
+</svg>

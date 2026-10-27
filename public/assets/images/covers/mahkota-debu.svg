@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-label="Sampul novel KERAJAAN">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c1420"/>
+      <stop offset="1" stop-color="#3d2430"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="34%" r="55%">
+      <stop offset="0" stop-color="#d9a441" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#d9a441" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="spine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity=".45"/>
+      <stop offset=".18" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect width="600" height="900" fill="url(#glow)"/>
+  <rect width="600" height="900" filter="url(#grain)" opacity=".045"/>
+  <rect width="600" height="900" fill="url(#spine)"/>
+  <rect x="26" y="26" width="548" height="848" rx="18" fill="none" stroke="#d9a441" stroke-opacity=".28"/>
+  <path d="M26 130h548" stroke="#d9a441" stroke-opacity=".22"/>
+  <text x="300" y="92" text-anchor="middle" font-family="Segoe UI, Helvetica, sans-serif" font-size="15" letter-spacing="7" fill="#d9a441" fill-opacity=".85">KERAJAAN</text>
+  <text x="300" y="152" text-anchor="middle" font-family="Segoe UI, Helvetica, sans-serif" font-size="12" letter-spacing="5" fill="#f7f2e8" fill-opacity=".55">NOVELVERSE</text>
+  <circle cx="300" cy="300" r="148" fill="none" stroke="#d9a441" stroke-opacity=".18"/>
+<path d="M252 352h96l16 30H236Z" fill="#d9a441" fill-opacity=".18" stroke="#d9a441" stroke-width="2" stroke-linejoin="round"/>
+<path d="M270 352V312h60v40" fill="#d9a441" fill-opacity=".1" stroke="#d9a441" stroke-width="2"/>
+<path d="M286 240h28l-6 72h-16Z" fill="#d9a441" fill-opacity=".3" stroke="#d9a441" stroke-width="2" stroke-linejoin="round"/>
+<path d="M300 210v22" stroke="#d9a441" stroke-opacity=".6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="356" cy="238" r="3" fill="#d9a441"/><circle cx="238" cy="258" r="3" fill="#d9a441"/>
+<circle cx="370" cy="276" r="2" fill="#d9a441" fill-opacity=".8"/><circle cx="230" cy="214" r="2" fill="#d9a441" fill-opacity=".8"/>
+  <text x="300" y="566" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="54" font-weight="700" fill="#f7f2e8" letter-spacing="0.5">Mahkota</text><text x="300" y="632" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="54" font-weight="700" fill="#f7f2e8" letter-spacing="0.5">dari</text><text x="300" y="698" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="54" font-weight="700" fill="#f7f2e8" letter-spacing="0.5">Debu</text>
+  <path d="M250 838h100" stroke="#d9a441" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+  <text x="300" y="868" text-anchor="middle" font-family="Segoe UI, Helvetica, sans-serif" font-size="13" letter-spacing="2.5" fill="#f7f2e8" fill-opacity=".78">RANIA PRAMESWARI</text>
+</svg>

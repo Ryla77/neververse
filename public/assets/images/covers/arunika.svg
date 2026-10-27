@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-label="Sampul novel PETUALANGAN">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#08202b"/>
+      <stop offset="1" stop-color="#0f4347"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="34%" r="55%">
+      <stop offset="0" stop-color="#f2b544" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#f2b544" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="spine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity=".45"/>
+      <stop offset=".18" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect width="600" height="900" fill="url(#glow)"/>
+  <rect width="600" height="900" filter="url(#grain)" opacity=".045"/>
+  <rect width="600" height="900" fill="url(#spine)"/>
+  <rect x="26" y="26" width="548" height="848" rx="18" fill="none" stroke="#f2b544" stroke-opacity=".28"/>
+  <path d="M26 130h548" stroke="#f2b544" stroke-opacity=".22"/>
+  <text x="300" y="92" text-anchor="middle" font-family="Segoe UI, Helvetica, sans-serif" font-size="15" letter-spacing="7" fill="#f2b544" fill-opacity=".85">PETUALANGAN</text>
+  <text x="300" y="152" text-anchor="middle" font-family="Segoe UI, Helvetica, sans-serif" font-size="12" letter-spacing="5" fill="#f7f2e8" fill-opacity=".55">NOVELVERSE</text>
+  <circle cx="300" cy="300" r="148" fill="none" stroke="#f2b544" stroke-opacity=".22"/>
+<circle cx="300" cy="300" r="112" fill="none" stroke="#f2b544" stroke-opacity=".35"/>
+<circle cx="300" cy="300" r="76" fill="none" stroke="#f2b544" stroke-opacity=".2" stroke-dasharray="4 8"/>
+<path d="M330 220l-18 62-52 18 18-62Z" fill="#f2b544" fill-opacity=".22" stroke="#f2b544" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="300" cy="300" r="7" fill="#f2b544"/>
+<path d="M300 152v-20M300 448v20M152 300h-20M448 300h20" stroke="#f2b544" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+<path d="M396 204l-14 14M204 396l-14 14M396 396l-14-14M204 204l-14-14" stroke="#f2b544" stroke-opacity=".35" stroke-width="2"/>
+  <text x="300" y="566" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="54" font-weight="700" fill="#f7f2e8" letter-spacing="0.5">Arunika</text><text x="300" y="632" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="54" font-weight="700" fill="#f7f2e8" letter-spacing="0.5">Jejak Sang</text><text x="300" y="698" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="54" font-weight="700" fill="#f7f2e8" letter-spacing="0.5">Pengembara</text>
+  <path d="M250 838h100" stroke="#f2b544" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+  <text x="300" y="868" text-anchor="middle" font-family="Segoe UI, Helvetica, sans-serif" font-size="13" letter-spacing="2.5" fill="#f7f2e8" fill-opacity=".78">BIMO PRASETYO</text>
+</svg>

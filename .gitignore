@@ -1,0 +1,29 @@
+# Konfigurasi rahasia
+.env
+/config/config.local.php
+
+# Dependensi
+/vendor/
+
+# Unggahan pengguna (sampul) - jangan ikut disimpan
+/public/uploads/covers/*
+!/public/uploads/covers/.gitkeep
+
+# Log & kredensial hasil instalasi
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/mail/*
+!/storage/mail/.gitkeep
+/storage/install-credentials.txt
+/storage/.installed.lock
+
+# Berkas sementara pengujian
+/tests/tmp/
+/tests/last-run.json
+/tests/last-output.txt
+/tests/smtp-last-run.json
+
+# Berkas sistem
+.DS_Store
+Thumbs.db
+*.log
