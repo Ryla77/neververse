@@ -103,12 +103,16 @@ final class TwoFactorController extends Controller
         }
 
         $secret = TwoFactorService::pendingSecret() ?? TwoFactorService::startSetup();
+        $secretLines = array_map(
+            static fn (array $groups): string => implode(' ', $groups),
+            array_chunk(str_split($secret, 4), 4)
+        );
 
         $this->render('auth/two-factor-setup', [
             'title' => 'Aktifkan verifikasi dua langkah — NovelVerse',
             'metaDescription' => 'Tambahkan kunci rahasia ke aplikasi autentikator, lalu konfirmasi kode 6 digit.',
             'email' => (string) $user['email'],
-            'secretGroups' => trim(chunk_split($secret, 4, ' ')),
+            'secretLines' => $secretLines,
             'otpauthUri' => TwoFactorService::provisioningUri((string) $user['email'], $secret),
         ], 'layouts/minimal');
     }

@@ -373,6 +373,7 @@ Peran:
 - Login sebagai admin melalui `/masuk`, lalu buka `/admin`.
 - Admin dapat mengubah peran pengguna dan menonaktifkan akun melalui menu **Pengguna**.
 - Tombol **Reset sandi** membuat kata sandi sementara acak dan menampilkannya sekali di pesan flash. Sampaikan kepada pengguna dan minta segera mengganti. Reset oleh admin otomatis mengakhiri seluruh sesi aktif pengguna tersebut; perubahan sandi mandiri tetap mempertahankan sesi saat ini.
+- Tombol **Reset 2FA** muncul untuk pengguna dengan 2FA aktif. Aksi ini hanya tersedia untuk peran admin (diperiksa di backend), menghapus kunci TOTP beserta seluruh kode pemulihan, dan tidak mengubah kata sandi.
 - Sistem mencegah admin menonaktifkan/menurunkan perannya sendiri dan mencegah hilangnya admin aktif terakhir.
 
 ## Lupa dan Reset Kata Sandi
@@ -434,6 +435,7 @@ Detail keamanan:
 - Sesi pending setelah kata sandi benar berlaku 10 menit dan belum memiliki hak akses apa pun. Percobaan kode yang gagal dibatasi 5 per 15 menit per akun dan 20 per 15 menit per IP; melewati batas menghapus sesi pending dan mengembalikan pengguna ke halaman masuk.
 - Aktivasi dan penonaktifan juga dibatasi (masing-masing 5 percobaan per 15 menit). Menonaktifkan 2FA mewajibkan kata sandi saat ini **dan** kode autentikator atau kode pemulihan yang valid.
 - Akun yang menonaktifkan 2FA menghapus rahasia TOTP beserta seluruh kode pemulihannya.
+- Jika pengguna kehilangan aplikasi autentikator **dan** seluruh kode pemulihan, admin dapat memakai **Reset 2FA** di `/admin/pengguna`. Aksi ini dijaga middleware peran admin, menghapus rahasia TOTP dan kode pemulihan, tetapi tidak mengubah kata sandi; pengguna dapat masuk dengan kata sandi lalu mengaktifkan 2FA kembali.
 
 Jika memperbarui instalasi lama, terapkan tabel `user_two_factor` dan `user_recovery_codes` dari `database/schema.sql`, lalu pastikan `APP_KEY` terisi di `.env`. Tanpa `APP_KEY`, panel 2FA menampilkan peringatan dan aktivasi ditolak di backend.
 
@@ -491,14 +493,14 @@ C:\xampp\php\php.exe tests\run.php
 Hasil terakhir pada lingkungan ini:
 
 ```text
-Total pemeriksaan : 192
-Lulus             : 192
+Total pemeriksaan : 196
+Lulus             : 196
 Gagal             : 0
 ```
 
 Ringkasan tersimpan di `tests/last-run.json`; keluaran lengkap di `tests/last-output.txt`. Keduanya artefak tes dan di-gitignore.
 
-Cakupan tes antara lain: koneksi database, halaman publik, registrasi/login/logout, validasi, CSRF, pencarian/filter/urut/paginasi, detail novel, navigasi bab, progres baca, favorit tambah/hapus, komentar dan rating, laporan, unggahan sampul, alur draf hingga publikasi, pembatasan peran, kepemilikan novel, pengelolaan admin, output escaping, header keamanan, verifikasi email (email bertoken, banner, kirim ulang, pembatalan tautan lama, token sekali pakai, token kedaluwarsa, penolakan komentar/rating/akses penulis sebelum verifikasi, dan verifikasi ulang saat email berubah), alur lupa/reset kata sandi (pesan umum, email lokal, hash token, token sekali pakai, token kedaluwarsa, validasi sandi, login dengan sandi baru, dan pembatalan tautan saat sandi diubah), serta 2FA (aktivasi dengan kode TOTP, rahasia terenkripsi, kode pemulihan sekali tampil dan sekali pakai, sesi pending tanpa hak akses, penolakan kode salah, anti-replay, pergeseran langkah waktu, penonaktifan dengan kata sandi + kode, dan rate limit tantangan).
+Cakupan tes antara lain: koneksi database, halaman publik, registrasi/login/logout, validasi, CSRF, pencarian/filter/urut/paginasi, detail novel, navigasi bab, progres baca, favorit tambah/hapus, komentar dan rating, laporan, unggahan sampul, alur draf hingga publikasi, pembatasan peran, kepemilikan novel, pengelolaan admin, output escaping, header keamanan, verifikasi email (email bertoken, banner, kirim ulang, pembatalan tautan lama, token sekali pakai, token kedaluwarsa, penolakan komentar/rating/akses penulis sebelum verifikasi, dan verifikasi ulang saat email berubah), alur lupa/reset kata sandi (pesan umum, email lokal, hash token, token sekali pakai, token kedaluwarsa, validasi sandi, login dengan sandi baru, dan pembatalan tautan saat sandi diubah), serta 2FA (aktivasi dengan kode TOTP, rahasia terenkripsi, kode pemulihan sekali tampil dan sekali pakai, sesi pending tanpa hak akses, penolakan kode salah, anti-replay, pergeseran langkah waktu, penonaktifan dengan kata sandi + kode, rate limit tantangan, status 2FA di daftar pengguna admin, penolakan reset oleh non-admin, dan reset 2FA oleh admin yang memulihkan akses masuk).
 
 ### Tes SMTP end-to-end
 
@@ -577,7 +579,7 @@ Log aplikasi berada di `storage/logs/app.log`. Log tidak diletakkan di folder pu
 - Rate limit untuk login, registrasi, komentar, rating, laporan, perubahan kata sandi, permintaan/penggunaan tautan reset kata sandi, serta penggunaan dan pengiriman ulang tautan verifikasi email.
 - Token reset kata sandi dan token verifikasi email dibuat acak 256-bit, disimpan hanya sebagai hash SHA-256, memiliki masa berlaku, dan tidak dapat dipakai ulang. Respons permintaan reset selalu generik agar keberadaan akun tidak dapat ditebak. Tautan reset yang belum dipakai dibatalkan saat kata sandi diubah (mandiri atau oleh admin), email diganti, atau akun dinonaktifkan.
 - Verifikasi email ditegakkan di backend, bukan hanya lewat tampilan: komentar, rating, dan peningkatan peran penulis menolak akun yang belum terverifikasi. Mengganti email membatalkan status verifikasi dan memaksa verifikasi ulang alamat baru.
-- 2FA TOTP: rahasia dienkripsi AES-256-GCM dengan `APP_KEY`, kode pemulihan disimpan sebagai hash SHA-256 dan sekali pakai, kode TOTP tidak dapat dipakai ulang, sesi pending berlaku 10 menit tanpa hak akses, dan tantangan/aktivasi/penonaktifan dibatasi di backend.
+- 2FA TOTP: rahasia dienkripsi AES-256-GCM dengan `APP_KEY`, kode pemulihan disimpan sebagai hash SHA-256 dan sekali pakai, kode TOTP tidak dapat dipakai ulang, sesi pending berlaku 10 menit tanpa hak akses, dan tantangan/aktivasi/penonaktifan dibatasi di backend. Reset 2FA hanya tersedia untuk admin dan dijaga middleware peran.
 - Transport SMTP memverifikasi sertifikat server (TLS 1.2/1.3, `verify_peer` dan `verify_peer_name` aktif), mewajibkan STARTTLS pada mode `tls`, menolak kredensial tanpa TLS, serta tidak menuliskan kata sandi ke pesan kesalahan atau log.
 - Unggahan divalidasi tipe isi, ukuran, dan dimensi; nama file diacak; eksekusi PHP di folder unggahan dinonaktifkan.
 - Header keamanan: CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, dan `Permissions-Policy`.
@@ -588,7 +590,7 @@ Aplikasi belum diaudit oleh pihak ketiga. Pengujian yang dilakukan adalah tes in
 
 ## Batasan yang Diketahui
 
-- 2FA memakai TOTP aplikasi autentikator; tidak ada OTP via SMS/email, WebAuthn/passkey, atau opsi "ingat perangkat ini". Kehilangan aplikasi autentikator dan seluruh kode pemulihan berarti akun tidak dapat masuk tanpa bantuan admin. Verifikasi email tersedia, tetapi akun yang belum terverifikasi tetap dapat login dan membaca; hanya komentar, rating, dan peningkatan peran penulis yang dibatasi. Reset kata sandi mandiri melalui email tersedia; reset oleh admin tetap dapat dilakukan.
+- 2FA memakai TOTP aplikasi autentikator; tidak ada OTP via SMS/email, WebAuthn/passkey, atau opsi "ingat perangkat ini". Kehilangan aplikasi autentikator dan seluruh kode pemulihan hanya dapat dipulihkan melalui reset 2FA oleh admin, bukan layanan mandiri. Verifikasi email tersedia, tetapi akun yang belum terverifikasi tetap dapat login dan membaca; hanya komentar, rating, dan peningkatan peran penulis yang dibatasi. Reset kata sandi mandiri melalui email tersedia; reset oleh admin tetap dapat dilakukan.
 - Transport email `file` dan `smtp` diuji di lingkungan ini. SMTP diuji terhadap server lokal dengan STARTTLS dan AUTH, bukan terhadap penyedia eksternal seperti Gmail atau Outlook. Pengiriman nyata, reputasi domain, SPF/DKIM, bounce, dan spam filter tidak diuji di sini. Transport `mail()` tetap bergantung pada konfigurasi MTA server.
 - Unggahan gambar tidak di-re-encode (GD tidak tersedia di lingkungan ini); validasi mengandalkan `finfo` dan `getimagesize`.
 - CSP mengizinkan `style-src 'unsafe-inline'` karena beberapa gaya ditulis inline.

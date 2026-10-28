@@ -1469,6 +1469,41 @@ try {
             && locationIs($throttledChallenge, '/masuk')
             && str_contains($throttledPage['body'], 'Terlalu banyak percobaan kode')
     );
+
+    $adminUserRow = $http->request('admin', 'GET', '/admin/pengguna?q=' . urlencode($twoFactorEmail));
+    check(
+        'Daftar pengguna admin menampilkan status 2FA aktif',
+        $adminUserRow['status'] === 200
+            && str_contains($adminUserRow['body'], '2FA aktif')
+            && str_contains($adminUserRow['body'], 'reset-2fa')
+    );
+
+    $tokens = [];
+    $unauthorizedReset = postWith($http, 'twofactor', '/admin/pengguna/' . $twoFactorUserId . '/reset-2fa', []);
+    check(
+        'Reset 2FA ditolak untuk pengguna yang bukan admin',
+        $unauthorizedReset['status'] === 302
+            && dbCount('SELECT COUNT(*) FROM user_two_factor WHERE user_id = ?', [$twoFactorUserId]) === 1
+    );
+
+    $tokens = [];
+    $adminReset = postWith($http, 'admin', '/admin/pengguna/' . $twoFactorUserId . '/reset-2fa', []);
+    check(
+        'Admin dapat mereset 2FA dan menghapus kode pemulihan',
+        $adminReset['status'] === 302
+            && locationIs($adminReset, '/admin/pengguna')
+            && dbCount('SELECT COUNT(*) FROM user_two_factor WHERE user_id = ?', [$twoFactorUserId]) === 0
+            && dbCount('SELECT COUNT(*) FROM user_recovery_codes WHERE user_id = ?', [$twoFactorUserId]) === 0
+    );
+
+    $tokens = [];
+    $loginAfterReset = postWith($http, 'twofactor', '/masuk', ['email' => $twoFactorEmail, 'password' => $twoFactorPassword]);
+    check(
+        'Setelah reset admin pengguna dapat masuk hanya dengan kata sandi',
+        $loginAfterReset['status'] === 302
+            && !locationIs($loginAfterReset, '/masuk/2fa')
+            && $http->request('twofactor', 'GET', '/profil')['status'] === 200
+    );
     $tokens = [];
 
     /* ----------------------------------------------------------------------

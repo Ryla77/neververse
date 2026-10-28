@@ -95,9 +95,11 @@ final class UserModel
         $total = (int) Database::fetchColumn('SELECT COUNT(*) FROM users u ' . $where, $params);
         $items = Database::fetchAll(
             "SELECT u.id, u.email, u.display_name, u.role, u.bio, u.is_active, u.last_login_at, u.created_at,
-                    (ev.verified_at IS NOT NULL) AS is_verified
+                    (ev.verified_at IS NOT NULL) AS is_verified,
+                    (tf.user_id IS NOT NULL) AS has_two_factor
              FROM users u
              LEFT JOIN email_verifications ev ON ev.user_id = u.id
+             LEFT JOIN user_two_factor tf ON tf.user_id = u.id
              {$where}
              ORDER BY u.created_at DESC
              LIMIT {$perPage} OFFSET {$offset}",

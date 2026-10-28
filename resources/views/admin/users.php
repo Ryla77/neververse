@@ -80,6 +80,9 @@ $items = $result['items'] ?? [];
                                                 <?php else: ?>
                                                     <span class="badge badge--muted">Belum verifikasi</span>
                                                 <?php endif; ?>
+                                                <?php if ((int) ($user['has_two_factor'] ?? 0) === 1): ?>
+                                                    <span class="badge badge--gold">2FA aktif</span>
+                                                <?php endif; ?>
                                                 <?php if ($isSelf): ?>
                                                     <span class="badge badge--muted"><?= e(role_label((string) $user['role'])) ?></span>
                                                     <span class="badge badge--published">Aktif</span>
@@ -111,6 +114,12 @@ $items = $result['items'] ?? [];
                                                         <?= csrf_field() ?>
                                                         <button class="btn btn--ghost btn--xs" type="submit"><?= icon('lock', 'icon icon--xs') ?>Reset sandi</button>
                                                     </form>
+                                                    <?php if ((int) ($user['has_two_factor'] ?? 0) === 1): ?>
+                                                        <form method="post" action="<?= e(url('admin/pengguna/' . $user['id'] . '/reset-2fa')) ?>" data-confirm="Reset verifikasi dua langkah <?= e($user['display_name']) ?>? Kunci TOTP dan kode pemulihan akan dihapus, dan pengguna dapat masuk hanya dengan kata sandi.">
+                                                            <?= csrf_field() ?>
+                                                            <button class="btn btn--ghost btn--xs" type="submit"><?= icon('key', 'icon icon--xs') ?>Reset 2FA</button>
+                                                        </form>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>
@@ -135,6 +144,7 @@ $items = $result['items'] ?? [];
                         <li>Admin tidak dapat mengubah peran atau menonaktifkan akunnya sendiri dari halaman ini.</li>
                         <li>Sistem menolak perubahan yang menghilangkan admin aktif terakhir.</li>
                         <li>Kata sandi sementara hanya ditampilkan sekali setelah reset; pengguna harus segera menggantinya.</li>
+                        <li>Reset 2FA menghapus kunci autentikator dan kode pemulihan pengguna. Gunakan hanya ketika pengguna kehilangan akses ke keduanya.</li>
                         <li>Menonaktifkan akun membuat pengguna tidak dapat masuk, tetapi datanya tetap tersimpan.</li>
                     </ul>
                 </section>

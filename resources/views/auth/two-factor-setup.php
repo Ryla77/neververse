@@ -20,7 +20,7 @@ use App\Core\View;
                 <li>Tambahkan akun baru, lalu masukkan kunci berikut secara manual:</li>
             </ol>
 
-            <p class="secret-key" aria-label="Kunci rahasia verifikasi dua langkah"><code><?= e($secretGroups) ?></code></p>
+            <p class="secret-key" aria-label="Kunci rahasia verifikasi dua langkah"><code><?= e(implode("\n", $secretLines)) ?></code></p>
             <p class="form-hint"><?= icon('info', 'icon icon--xs') ?> Akun: <strong><?= e($email) ?></strong>. Jenis: berbasis waktu (TOTP), 6 digit, 30 detik. Kunci ini hanya ditampilkan sekali di halaman ini.</p>
             <p class="form-hint"><?= icon('external', 'icon icon--xs') ?> Bila perangkat mendukung, <a href="<?= e($otpauthUri) ?>">buka tautan otpauth://</a> untuk menambahkan akun secara otomatis.</p>
 

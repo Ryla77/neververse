@@ -18,6 +18,7 @@ use App\Models\PasswordResetModel;
 use App\Models\RatingModel;
 use App\Models\ReportModel;
 use App\Models\UserModel;
+use App\Services\TwoFactorService;
 
 final class AdminController extends Controller
 {
@@ -114,6 +115,26 @@ final class AdminController extends Controller
         $this->flashSuccess(
             'Kata sandi sementara untuk ' . $user['email'] . ': ' . $password
             . '. Tampilkan sekali ini dan minta pengguna segera menggantinya.'
+        );
+        Response::back('admin/pengguna');
+    }
+
+    public function resetTwoFactor(Request $request, string $id): void
+    {
+        $user = UserModel::find((int) $id);
+        if ($user === null) {
+            abort(404);
+        }
+
+        if (!TwoFactorService::enabled((int) $user['id'])) {
+            $this->flashInfo('Verifikasi dua langkah tidak aktif pada akun ' . $user['display_name'] . '.');
+            Response::back('admin/pengguna');
+        }
+
+        TwoFactorService::disable((int) $user['id']);
+        $this->flashSuccess(
+            'Verifikasi dua langkah untuk ' . $user['display_name'] . ' telah direset. '
+            . 'Pengguna dapat masuk dengan kata sandi dan mengaktifkannya kembali dari profil.'
         );
         Response::back('admin/pengguna');
     }

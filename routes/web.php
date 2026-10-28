@@ -88,6 +88,7 @@ return static function (Router $router): void {
     $router->get('/admin/pengguna', [AdminController::class, 'users'], ['role:admin']);
     $router->post('/admin/pengguna/{id}', [AdminController::class, 'updateUser'], ['role:admin']);
     $router->post('/admin/pengguna/{id}/reset-sandi', [AdminController::class, 'resetPassword'], ['role:admin']);
+    $router->post('/admin/pengguna/{id}/reset-2fa', [AdminController::class, 'resetTwoFactor'], ['role:admin']);
     $router->get('/admin/novel', [AdminController::class, 'novels'], ['role:admin']);
     $router->post('/admin/novel/{id}/publikasi', [AdminController::class, 'novelPublish'], ['role:admin']);
     $router->post('/admin/novel/{id}/unggulan', [AdminController::class, 'novelFeatured'], ['role:admin']);
