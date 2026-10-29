@@ -40,8 +40,9 @@ novelverse/
 │   ├── Services/           # Layanan pendukung
 │   └── bootstrap.php       # Bootstrap aplikasi
 ├── bin/
-│   ├── install.php         # Installer CLI (database, akun, seed)
-│   └── generate-covers.php # Pembuat sampul SVG data contoh
+│   ├── install.php              # Installer CLI (database, akun, seed)
+│   ├── reset-admin-password.php # Reset kata sandi admin lewat terminal
+│   └── generate-covers.php      # Pembuat sampul SVG data contoh
 ├── config/
 │   ├── config.php          # Konfigurasi aplikasi
 │   └── helpers.php         # Helper e(), url(), asset(), csrf_field(), dsb.
@@ -376,6 +377,7 @@ Peran:
 - Tombol **Reset sandi** membuat kata sandi sementara acak dan menampilkannya sekali di pesan flash. Sampaikan kepada pengguna dan minta segera mengganti. Reset oleh admin otomatis mengakhiri seluruh sesi aktif pengguna tersebut; perubahan sandi mandiri tetap mempertahankan sesi saat ini.
 - Tombol **Reset 2FA** muncul untuk pengguna dengan 2FA aktif. Aksi ini hanya tersedia untuk peran admin (diperiksa di backend), menghapus kunci TOTP beserta seluruh kode pemulihan, dan tidak mengubah kata sandi.
 - Sistem mencegah admin menonaktifkan/menurunkan perannya sendiri dan mencegah hilangnya admin aktif terakhir.
+- Jika kata sandi admin hilang, jalankan `php bin/reset-admin-password.php` (opsional: tambahkan email admin sebagai argumen). Perintah ini membuat kata sandi acak baru, menampilkannya satu kali, menghapus token reset yang tertunda, dan menyinkronkan baris `ADMIN` di `storage/install-credentials.txt` bila berkas itu ada. Sesi lama otomatis tidak berlaku karena sidik jari sesi terikat pada hash kata sandi; 2FA tidak dimatikan. Kata sandi tidak diterima sebagai argumen agar tidak tersimpan di riwayat shell.
 
 ## Log Audit Admin
 
