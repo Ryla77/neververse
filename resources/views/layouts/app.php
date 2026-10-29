@@ -219,10 +219,11 @@ $hideFooter = (bool) ($hideFooter ?? false);
         </div>
         <div>
             <h2 class="footer-title">Tentang</h2>
-            <p class="footer-note">Selamat datang di dunia tempat imajinasi menjadi nyata dan setiap kata menyimpan cerita.</p>
-            <p class="footer-note">Kami hadir sebagai ruang bagi para pecinta cerita untuk menjelajahi berbagai kisah penuh cinta, petualangan, misteri, dan takdir. Melalui setiap halaman, kami ingin menghadirkan pengalaman membaca yang bukan sekadar hiburan, tetapi juga perjalanan emosional yang meninggalkan kesan mendalam.</p>
-            <p class="footer-note">Kami percaya bahwa setiap cerita memiliki keistimewaannya sendiri, setiap karakter memiliki perjalanan yang berarti, dan setiap pembaca berhak menemukan kisah yang menyentuh hatinya.</p>
-            <p class="footer-note"><strong>Karena bagi kami, cerita yang indah bukan hanya untuk dibaca, tetapi juga untuk dirasakan.</strong></p>
+            <p class="footer-note"><strong>“Setiap lentera menyimpan cahaya, setiap cerita menyimpan makna.”</strong></p>
+            <p class="footer-note">Selamat datang di tempat di mana setiap kata menjadi cahaya dan setiap cerita membawa kita menuju dunia yang berbeda.</p>
+            <p class="footer-note">Seperti lentera yang menerangi jalan di tengah gelapnya malam, kami hadir untuk menemani perjalanan imajinasimu melalui kisah-kisah penuh cinta, rahasia, petualangan, dan takdir. Di antara halaman-halaman ini, kamu akan menemukan cerita yang menghangatkan hati, menghidupkan mimpi, dan meninggalkan kenangan yang tak mudah dilupakan.</p>
+            <p class="footer-note">Kami percaya bahwa sebuah cerita bukan sekadar rangkaian kata, melainkan cahaya kecil yang mampu menyentuh hati siapa pun yang membacanya.</p>
+            <p class="footer-note"><strong>“Nyalakan lenteramu, temukan kisahmu, dan biarkan imajinasi menuntunmu.”</strong></p>
         </div>
     </div>
     <div class="container footer-bottom">
