@@ -219,8 +219,7 @@ $hideFooter = (bool) ($hideFooter ?? false);
         </div>
         <div>
             <h2 class="footer-title">Tentang</h2>
-            <p class="footer-note">Seluruh novel contoh di situs ini ditulis khusus untuk pengujian aplikasi. Tidak ada karya berhak cipta pihak lain yang ditampilkan.</p>
-            <p class="footer-note">Masuk untuk menyimpan perpustakaan dan melanjutkan bacaan di perangkat mana pun.</p>
+            <p class="footer-note">Cerita untuk semua orang</p>
         </div>
     </div>
     <div class="container footer-bottom">
