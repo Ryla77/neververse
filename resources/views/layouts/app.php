@@ -223,7 +223,7 @@ $hideFooter = (bool) ($hideFooter ?? false);
         </div>
     </div>
     <div class="container footer-bottom">
-        <span>&copy; <?= date('Y') ?> NovelVerse. Dibuat untuk pembelajaran.</span>
+        <span>&copy; <?= date('Y') ?> NovelVerse. Semua cerita memiliki cahayanya sendiri.</span>
         <span>Baca dengan tenang. Tulis dengan jujur.</span>
     </div>
 </footer>
