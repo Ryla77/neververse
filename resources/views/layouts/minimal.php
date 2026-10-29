@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$pageTitle = $title ?? 'NovelVerse';
+$pageTitle = $title ?? 'Luminara';
 $bodyClass = trim((string) ($bodyClass ?? ''));
 ?>
 <!doctype html>
@@ -20,7 +20,7 @@ $bodyClass = trim((string) ($bodyClass ?? ''));
 <a class="skip-link" href="#konten">Lewati ke konten utama</a>
 <header class="minimal-header">
     <div class="container minimal-header__inner">
-        <a class="brand" href="<?= e(url('/')) ?>" aria-label="NovelVerse, kembali ke beranda">
+        <a class="brand" href="<?= e(url('/')) ?>" aria-label="Luminara, kembali ke beranda">
             <svg class="brand__mark" viewBox="0 0 36 36" aria-hidden="true" fill="none">
                 <circle cx="18" cy="3.8" r="1.6" fill="currentColor"/>
                 <path d="M18 5.4v3.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -30,7 +30,7 @@ $bodyClass = trim((string) ($bodyClass ?? ''));
                 <circle cx="18" cy="20.6" r="5.2" stroke="currentColor" stroke-width="1" opacity=".35"/>
                 <path d="M12.4 31h11.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".65"/>
             </svg>
-            <span class="brand__text">Novel<em>Verse</em><small>Ruang baca digital</small></span>
+            <span class="brand__text">Lumi<em>nara</em><small>Ruang baca digital</small></span>
         </a>
         <div class="minimal-header__actions">
             <button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="Ganti mode gelap atau terang">

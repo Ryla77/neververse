@@ -95,7 +95,7 @@ function smtpTlsMethod(): int
 
 function smtpHandle($client, string $captureDir, string $logFile, bool $startTlsEnabled, string $authMode, string $cert, string $key, string $username, string $password, bool $tlsInitially = false): void
 {
-    smtpReply($client, '220 fake.local ESMTP NovelVerse Test');
+    smtpReply($client, '220 fake.local ESMTP Luminara Test');
     smtpLog($logFile, 'CONNECT');
 
     $tls = $tlsInitially;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 <section class="error-page">
     <div class="error-page__card">
         <span class="error-page__code">503</span>
-        <span class="eyebrow">NovelVerse</span>
+        <span class="eyebrow">Luminara</span>
         <h1>Koneksi database bermasalah</h1>
         <p class="lead">Aplikasi tidak dapat terhubung ke database. Pastikan MySQL/MariaDB berjalan dan konfigurasi <code class="code">.env</code> sudah benar.</p>
         <div class="error-page__steps">

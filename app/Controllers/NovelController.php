@@ -38,7 +38,7 @@ final class NovelController extends Controller
         $result = NovelModel::listPublic($filters, $page);
 
         $this->render('novels/index', [
-            'title' => 'Jelajahi Novel — NovelVerse',
+            'title' => 'Jelajahi Novel — Luminara',
             'metaDescription' => 'Cari dan temukan novel original berdasarkan judul, penulis, dan genre favoritmu.',
             'result' => $result,
             'filters' => $filters,
@@ -88,7 +88,7 @@ final class NovelController extends Controller
         }
 
         $this->render('novels/show', [
-            'title' => $novel['title'] . ' — NovelVerse',
+            'title' => $novel['title'] . ' — Luminara',
             'metaDescription' => excerpt_text((string) $novel['synopsis'], 155),
             'novel' => $novel,
             'chapters' => $chapters,

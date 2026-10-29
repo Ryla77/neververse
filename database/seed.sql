@@ -1,4 +1,4 @@
--- NovelVerse - Data Contoh
+-- Luminara - Data Contoh
 -- Jalankan setelah bin/install.php membuat akun demo (admin, penulis, pembaca).
 -- Seluruh cerita di bawah ini adalah karya orisinal untuk pengujian.
 

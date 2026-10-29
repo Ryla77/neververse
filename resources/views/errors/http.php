@@ -5,7 +5,7 @@ declare(strict_types=1);
 <section class="error-page">
     <div class="error-page__card">
         <span class="error-page__code"><?= (int) $status ?></span>
-        <span class="eyebrow">NovelVerse</span>
+        <span class="eyebrow">Luminara</span>
         <h1><?= e($title) ?></h1>
         <p class="lead"><?= e($message) ?></p>
         <div class="form-actions form-actions--center">

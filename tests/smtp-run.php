@@ -276,7 +276,7 @@ final class Http
             CURLOPT_COOKIEJAR => $jar,
             CURLOPT_COOKIEFILE => $jar,
             CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_USERAGENT => 'NovelVerse-SMTP-Test/1.0',
+            CURLOPT_USERAGENT => 'Luminara-SMTP-Test/1.0',
         ]);
         if ($data !== null) {
             curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data));
@@ -440,7 +440,7 @@ function smtpEnv(int $port, string $cert, string $smtpUser, string $smtpPass, st
         'MAIL_PASSWORD' => $smtpPass,
         'MAIL_CAFILE' => $cert,
         'MAIL_FROM_ADDRESS' => 'no-reply@novelverse.test',
-        'MAIL_FROM_NAME' => 'NovelVerse Test',
+        'MAIL_FROM_NAME' => 'Luminara Test',
         'MAIL_TIMEOUT' => '5',
         'MAIL_HELO' => 'localhost',
         'SMTP_TO' => 'penerima@example.test',
@@ -476,7 +476,7 @@ prompt = no
 
 [dn]
 CN = localhost
-O = NovelVerse Test
+O = Luminara Test
 
 [v3_req]
 subjectAltName = @alt_names
@@ -532,7 +532,7 @@ CNF
             'MAIL_PASSWORD' => $smtpPass,
             'MAIL_CAFILE' => $cert,
             'MAIL_FROM_ADDRESS' => 'no-reply@novelverse.test',
-            'MAIL_FROM_NAME' => 'NovelVerse Test',
+            'MAIL_FROM_NAME' => 'Luminara Test',
             'MAIL_TIMEOUT' => '10',
             'MAIL_HELO' => 'localhost',
             'PASSWORD_RESET_TTL' => '30',

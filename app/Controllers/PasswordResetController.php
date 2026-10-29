@@ -21,8 +21,8 @@ final class PasswordResetController extends Controller
     public function requestForm(Request $request): void
     {
         $this->render('auth/forgot-password', [
-            'title' => 'Lupa Kata Sandi — NovelVerse',
-            'metaDescription' => 'Minta tautan reset kata sandi akun NovelVerse melalui email.',
+            'title' => 'Lupa Kata Sandi — Luminara',
+            'metaDescription' => 'Minta tautan reset kata sandi akun Luminara melalui email.',
         ], 'layouts/minimal');
     }
 
@@ -61,8 +61,8 @@ final class PasswordResetController extends Controller
         $reset = $tokenHash !== null ? PasswordResetModel::findValid($tokenHash) : null;
 
         $this->render('auth/reset-password', [
-            'title' => 'Atur Kata Sandi Baru — NovelVerse',
-            'metaDescription' => 'Buat kata sandi baru untuk akun NovelVerse Anda.',
+            'title' => 'Atur Kata Sandi Baru — Luminara',
+            'metaDescription' => 'Buat kata sandi baru untuk akun Luminara Anda.',
             'token' => $tokenHash !== null ? $token : '',
             'valid' => $reset !== null,
             'expiresAt' => $reset['expires_at'] ?? null,
@@ -149,7 +149,7 @@ final class PasswordResetController extends Controller
                 $ttl
             );
         } catch (Throwable $e) {
-            error_log('[NovelVerse] Gagal mengirim email reset kata sandi: ' . $e->getMessage());
+            error_log('[Luminara] Gagal mengirim email reset kata sandi: ' . $e->getMessage());
         }
     }
 

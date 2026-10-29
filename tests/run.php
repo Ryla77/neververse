@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Uji integrasi NovelVerse melalui HTTP nyata.
+ * Uji integrasi Luminara melalui HTTP nyata.
  *
  * Jalankan server lebih dulu:
  *   php -S 127.0.0.1:8080 -t public public/router.php
@@ -70,7 +70,7 @@ final class Http
             CURLOPT_COOKIEJAR => $jar,
             CURLOPT_COOKIEFILE => $jar,
             CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_USERAGENT => 'NovelVerse-Test/1.0',
+            CURLOPT_USERAGENT => 'Luminara-Test/1.0',
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_HEADERFUNCTION => static function ($ch, string $line) use (&$responseHeaders): int {
                 $trimmed = trim($line);
@@ -336,7 +336,7 @@ try {
 
     $home = $http->request('anon', 'GET', '/');
     check('Beranda merespons 200', $home['status'] === 200, 'status ' . $home['status']);
-    check('Beranda menampilkan judul situs', str_contains($home['body'], 'NovelVerse'));
+    check('Beranda menampilkan judul situs', str_contains($home['body'], 'Luminara'));
     check('Beranda menampilkan novel dari database', $publishedNovel !== null && str_contains($home['body'], (string) $publishedNovel['title']));
     check('Beranda memuat CSS dan JS lokal', str_contains($home['body'], 'assets/css/app.css') && str_contains($home['body'], 'assets/js/app.js'));
 

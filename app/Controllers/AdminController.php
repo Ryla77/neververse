@@ -26,8 +26,8 @@ final class AdminController extends Controller
     public function dashboard(Request $request): void
     {
         $this->render('admin/dashboard', [
-            'title' => 'Dashboard Admin — NovelVerse',
-            'metaDescription' => 'Ringkasan pengguna, konten, dan moderasi NovelVerse.',
+            'title' => 'Dashboard Admin — Luminara',
+            'metaDescription' => 'Ringkasan pengguna, konten, dan moderasi Luminara.',
             'stats' => [
                 'users' => UserModel::countAll(),
                 'admins' => UserModel::countByRole('admin'),
@@ -54,8 +54,8 @@ final class AdminController extends Controller
         $page = max(1, $request->int('page', 1));
 
         $this->render('admin/users', [
-            'title' => 'Pengguna — Admin NovelVerse',
-            'metaDescription' => 'Kelola pengguna, peran, dan status akun NovelVerse.',
+            'title' => 'Pengguna — Admin Luminara',
+            'metaDescription' => 'Kelola pengguna, peran, dan status akun Luminara.',
             'result' => UserModel::adminList($query, $page),
             'query' => $query,
         ]);
@@ -164,7 +164,7 @@ final class AdminController extends Controller
         $page = max(1, $request->int('page', 1));
 
         $this->render('admin/novels', [
-            'title' => 'Novel — Admin NovelVerse',
+            'title' => 'Novel — Admin Luminara',
             'metaDescription' => 'Kelola publikasi, unggulan, dan penghapusan novel.',
             'result' => NovelModel::adminList($query, $status, $page),
             'query' => $query,
@@ -250,7 +250,7 @@ final class AdminController extends Controller
         $page = max(1, $request->int('page', 1));
 
         $this->render('admin/chapters', [
-            'title' => 'Bab — Admin NovelVerse',
+            'title' => 'Bab — Admin Luminara',
             'metaDescription' => 'Kelola status dan hapus bab di seluruh novel.',
             'result' => ChapterModel::adminList($query, $status, $page),
             'query' => $query,
@@ -311,7 +311,7 @@ final class AdminController extends Controller
     public function genres(Request $request): void
     {
         $this->render('admin/genres', [
-            'title' => 'Genre — Admin NovelVerse',
+            'title' => 'Genre — Admin Luminara',
             'metaDescription' => 'Kelola daftar genre yang digunakan novel.',
             'genres' => CategoryModel::allWithCounts(false),
         ]);
@@ -415,8 +415,8 @@ final class AdminController extends Controller
         $page = max(1, $request->int('page', 1));
 
         $this->render('admin/comments', [
-            'title' => 'Komentar — Admin NovelVerse',
-            'metaDescription' => 'Moderasi komentar pembaca NovelVerse.',
+            'title' => 'Komentar — Admin Luminara',
+            'metaDescription' => 'Moderasi komentar pembaca Luminara.',
             'result' => CommentModel::adminList($query, $status, $page),
             'query' => $query,
             'status' => $status,
@@ -475,7 +475,7 @@ final class AdminController extends Controller
         $filter = $status === 'all' ? '' : $status;
 
         $this->render('admin/reports', [
-            'title' => 'Laporan — Admin NovelVerse',
+            'title' => 'Laporan — Admin Luminara',
             'metaDescription' => 'Tinjau laporan konten dan kelola moderasi.',
             'result' => ReportModel::list($filter, $page),
             'status' => $status,
@@ -531,8 +531,8 @@ final class AdminController extends Controller
         $page = max(1, $request->int('page', 1));
 
         $this->render('admin/audit', [
-            'title' => 'Log audit — Admin NovelVerse',
-            'metaDescription' => 'Riwayat tindakan admin yang mengubah data NovelVerse.',
+            'title' => 'Log audit — Admin Luminara',
+            'metaDescription' => 'Riwayat tindakan admin yang mengubah data Luminara.',
             'result' => AuditLogModel::list($action, $query, $page),
             'action' => $action,
             'query' => $query,

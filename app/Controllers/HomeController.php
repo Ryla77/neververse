@@ -15,8 +15,8 @@ final class HomeController extends Controller
     public function index(Request $request): void
     {
         $this->render('home/index', [
-            'title' => 'NovelVerse — Temukan cerita berikutnya',
-            'metaDescription' => 'NovelVerse adalah platform membaca novel online berbahasa Indonesia. Jelajahi romansa, fantasi, reinkarnasi, kerajaan, petualangan, dan misteri.',
+            'title' => 'Luminara — Temukan cerita berikutnya',
+            'metaDescription' => 'Luminara adalah platform membaca novel online berbahasa Indonesia. Jelajahi romansa, fantasi, reinkarnasi, kerajaan, petualangan, dan misteri.',
             'featured' => NovelModel::featured(),
             'popular' => NovelModel::collection('popular', 6),
             'latest' => NovelModel::collection('latest', 6),

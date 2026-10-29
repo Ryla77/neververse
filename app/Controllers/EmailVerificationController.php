@@ -69,8 +69,8 @@ final class EmailVerificationController extends Controller
     private function renderResult(string $status, ?string $email = null): void
     {
         $this->render('auth/verify-email', [
-            'title' => 'Verifikasi Email — NovelVerse',
-            'metaDescription' => 'Konfirmasi alamat email akun NovelVerse Anda.',
+            'title' => 'Verifikasi Email — Luminara',
+            'metaDescription' => 'Konfirmasi alamat email akun Luminara Anda.',
             'status' => $status,
             'email' => $email,
             'loggedIn' => Auth::check(),

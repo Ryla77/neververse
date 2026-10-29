@@ -39,8 +39,8 @@ final class AuthorController extends Controller
         }
 
         $this->render('author/dashboard', [
-            'title' => 'Dashboard Penulis — NovelVerse',
-            'metaDescription' => 'Kelola novel dan bab yang kamu tulis di NovelVerse.',
+            'title' => 'Dashboard Penulis — Luminara',
+            'metaDescription' => 'Kelola novel dan bab yang kamu tulis di Luminara.',
             'novels' => $novels,
             'summary' => [
                 'novels' => count($novels),
@@ -56,7 +56,7 @@ final class AuthorController extends Controller
     public function create(Request $request): void
     {
         $this->render('author/novel-form', [
-            'title' => 'Novel Baru — NovelVerse',
+            'title' => 'Novel Baru — Luminara',
             'metaDescription' => 'Buat novel baru sebagai draf dan lengkapi detailnya.',
             'novel' => null,
             'categories' => CategoryModel::all(),
@@ -115,7 +115,7 @@ final class AuthorController extends Controller
         $novel = $this->ownedNovel((int) $id);
 
         $this->render('author/novel-form', [
-            'title' => 'Edit ' . $novel['title'] . ' — NovelVerse',
+            'title' => 'Edit ' . $novel['title'] . ' — Luminara',
             'metaDescription' => 'Edit detail novel, sampul, genre, dan status publikasi.',
             'novel' => $novel,
             'categories' => CategoryModel::all(),
@@ -216,7 +216,7 @@ final class AuthorController extends Controller
         $novel = $this->ownedNovel((int) $id);
 
         $this->render('author/chapters', [
-            'title' => 'Bab ' . $novel['title'] . ' — NovelVerse',
+            'title' => 'Bab ' . $novel['title'] . ' — Luminara',
             'metaDescription' => 'Kelola daftar bab, draf, dan publikasi novel kamu.',
             'novel' => $novel,
             'chapters' => ChapterModel::allByNovel((int) $novel['id']),

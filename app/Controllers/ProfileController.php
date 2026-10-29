@@ -24,7 +24,7 @@ final class ProfileController extends Controller
         $userId = (int) Auth::id();
 
         $this->render('profile/edit', [
-            'title' => 'Profil Saya — NovelVerse',
+            'title' => 'Profil Saya — Luminara',
             'metaDescription' => 'Kelola informasi akun, kata sandi, dan lihat aktivitas membaca kamu.',
             'user' => UserModel::find($userId),
             'bookmarks' => BookmarkModel::listForUser($userId),

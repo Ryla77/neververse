@@ -8,8 +8,8 @@ use App\Models\CategoryModel;
 $user = current_user();
 $currentTheme = theme();
 $navCategories = CategoryModel::all();
-$pageTitle = $title ?? 'NovelVerse';
-$description = $metaDescription ?? 'NovelVerse — baca novel original berbahasa Indonesia secara gratis.';
+$pageTitle = $title ?? 'Luminara';
+$description = $metaDescription ?? 'Luminara — baca novel original berbahasa Indonesia secara gratis.';
 $bodyClass = trim((string) ($bodyClass ?? ''));
 $hideFooter = (bool) ($hideFooter ?? false);
 ?>
@@ -30,7 +30,7 @@ $hideFooter = (bool) ($hideFooter ?? false);
 
 <header class="site-header">
     <div class="container header-inner">
-        <a class="brand" href="<?= e(url('/')) ?>" aria-label="NovelVerse, kembali ke beranda">
+        <a class="brand" href="<?= e(url('/')) ?>" aria-label="Luminara, kembali ke beranda">
             <svg class="brand__mark" viewBox="0 0 36 36" aria-hidden="true" fill="none">
                 <circle cx="18" cy="3.8" r="1.6" fill="currentColor"/>
                 <path d="M18 5.4v3.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -40,7 +40,7 @@ $hideFooter = (bool) ($hideFooter ?? false);
                 <circle cx="18" cy="20.6" r="5.2" stroke="currentColor" stroke-width="1" opacity=".35"/>
                 <path d="M12.4 31h11.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".65"/>
             </svg>
-            <span class="brand__text">Novel<em>Verse</em><small>Ruang baca digital</small></span>
+            <span class="brand__text">Lumi<em>nara</em><small>Ruang baca digital</small></span>
         </a>
 
         <nav class="nav-links" aria-label="Navigasi utama">
@@ -186,7 +186,7 @@ $hideFooter = (bool) ($hideFooter ?? false);
     <div class="container footer-grid">
         <div class="footer-brand">
             <a class="brand brand--footer" href="<?= e(url('/')) ?>">
-                <span class="brand__text">Novel<em>Verse</em></span>
+                <span class="brand__text">Lumi<em>nara</em></span>
             </a>
             <p>Ruang baca digital untuk cerita original berbahasa Indonesia. Temukan dunia baru, satu bab setiap waktu.</p>
             <div class="footer-badges">
@@ -223,7 +223,7 @@ $hideFooter = (bool) ($hideFooter ?? false);
         </div>
     </div>
     <div class="container footer-bottom">
-        <span>&copy; <?= date('Y') ?> NovelVerse. Semua cerita memiliki cahayanya sendiri.</span>
+        <span>&copy; <?= date('Y') ?> Luminara. Semua cerita memiliki cahayanya sendiri.</span>
         <span>Baca dengan tenang. Tulis dengan jujur.</span>
     </div>
 </footer>

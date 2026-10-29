@@ -16,8 +16,8 @@ final class LibraryController extends Controller
         $userId = (int) Auth::id();
 
         $this->render('library/index', [
-            'title' => 'Perpustakaan Saya — NovelVerse',
-            'metaDescription' => 'Novel favorit, riwayat bacaan, dan progres membaca milikmu di NovelVerse.',
+            'title' => 'Perpustakaan Saya — Luminara',
+            'metaDescription' => 'Novel favorit, riwayat bacaan, dan progres membaca milikmu di Luminara.',
             'bookmarks' => BookmarkModel::listForUser($userId),
             'continueReading' => ReadingProgressModel::continueReading($userId),
             'history' => ReadingProgressModel::history($userId, 20),

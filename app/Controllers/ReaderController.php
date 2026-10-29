@@ -55,7 +55,7 @@ final class ReaderController extends Controller
 
         $this->render('reader/show', [
             'title' => $current['title'] . ' — ' . $novel['title'],
-            'metaDescription' => 'Baca ' . $novel['title'] . ' bab ' . $number . ': ' . $current['title'] . ' di NovelVerse.',
+            'metaDescription' => 'Baca ' . $novel['title'] . ' bab ' . $number . ': ' . $current['title'] . ' di Luminara.',
             'novel' => $novel,
             'chapter' => $current,
             'chapters' => $chapters,

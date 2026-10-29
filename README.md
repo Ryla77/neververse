@@ -1,6 +1,6 @@
-# NovelVerse
+# Luminara
 
-NovelVerse adalah platform membaca dan menulis novel online berbahasa Indonesia. Aplikasi ini dibangun sebagai aplikasi PHP 8.2 + MySQL/MariaDB yang benar-benar berjalan, bukan sekadar rancangan. Seluruh cerita pada data contoh adalah karya orisinal yang ditulis khusus untuk proyek ini.
+Luminara adalah platform membaca dan menulis novel online berbahasa Indonesia. Aplikasi ini dibangun sebagai aplikasi PHP 8.2 + MySQL/MariaDB yang benar-benar berjalan, bukan sekadar rancangan. Seluruh cerita pada data contoh adalah karya orisinal yang ditulis khusus untuk proyek ini.
 
 Fitur utama:
 
@@ -168,7 +168,7 @@ Konfigurasi dibaca dari `.env` di root proyek. Berkas ini **tidak boleh** di-com
 
 | Kunci | Fungsi | Contoh |
 | --- | --- | --- |
-| `APP_NAME` | Nama aplikasi | `NovelVerse` |
+| `APP_NAME` | Nama aplikasi | `Luminara` |
 | `APP_ENV` | Lingkungan aplikasi | `local` atau `production` |
 | `APP_DEBUG` | Detail error di browser | `false` untuk produksi |
 | `APP_TIMEZONE` | Zona waktu aplikasi | `Asia/Jakarta` |
@@ -184,7 +184,7 @@ Konfigurasi dibaca dari `.env` di root proyek. Berkas ini **tidak boleh** di-com
 | `UPLOAD_MAX_KB` | Batas ukuran sampul (KB) | `2048` |
 | `MAIL_TRANSPORT` | Pengiriman email: `file` (lokal), `mail` (MTA server), atau `smtp` | `file` |
 | `MAIL_FROM_ADDRESS` | Alamat pengirim email | `no-reply@novelverse.local` |
-| `MAIL_FROM_NAME` | Nama pengirim email | `NovelVerse` |
+| `MAIL_FROM_NAME` | Nama pengirim email | `Luminara` |
 | `MAIL_HOST` | Host server SMTP (untuk `smtp`) | `smtp.example.com` |
 | `MAIL_PORT` | Port SMTP; default 587 untuk `tls`, 465 untuk `ssl` | `587` |
 | `MAIL_ENCRYPTION` | `tls` (STARTTLS), `ssl` (TLS implisit), atau `none` | `tls` |
@@ -224,7 +224,7 @@ MAIL_ENCRYPTION=tls
 MAIL_USERNAME=akun-smtp
 MAIL_PASSWORD=ganti-dengan-kata-sandi-smtp
 MAIL_FROM_ADDRESS=no-reply@example.com
-MAIL_FROM_NAME="NovelVerse"
+MAIL_FROM_NAME="Luminara"
 
 # Opsional
 MAIL_TIMEOUT=15
@@ -622,6 +622,6 @@ Aplikasi belum diaudit oleh pihak ketiga. Pengujian yang dilakukan adalah tes in
 
 ## Konten dan Lisensi Data Contoh
 
-Seluruh novel, sinopsis, bab, nama penulis, dan sampul SVG pada `database/seed.sql` serta `public/assets/images/covers` dibuat khusus untuk NovelVerse. Tidak ada karya berhak cipta milik pihak lain yang disalin. Ganti data contoh sebelum digunakan sebagai situs produksi.
+Seluruh novel, sinopsis, bab, nama penulis, dan sampul SVG pada `database/seed.sql` serta `public/assets/images/covers` dibuat khusus untuk Luminara. Tidak ada karya berhak cipta milik pihak lain yang disalin. Ganti data contoh sebelum digunakan sebagai situs produksi.
 
 Kode aplikasi disediakan untuk keperluan proyek ini. Tidak ada lisensi pihak ketiga yang diperlukan karena tidak memakai library eksternal.

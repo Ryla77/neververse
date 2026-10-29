@@ -5,7 +5,7 @@ declare(strict_types=1);
 <section class="error-page">
     <div class="error-page__card">
         <span class="error-page__code">Setup</span>
-        <span class="eyebrow">NovelVerse</span>
+        <span class="eyebrow">Luminara</span>
         <h1>Pemasangan diperlukan</h1>
         <p class="lead">Aplikasi belum memiliki berkas konfigurasi <code class="code">.env</code>. Jalankan pemasangan untuk membuat database, mengimpor data contoh, dan menyiapkan akun admin pertama.</p>
         <div class="error-page__steps">

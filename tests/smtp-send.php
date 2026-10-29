@@ -12,8 +12,8 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 use App\Core\Mailer;
 
 $to = (string) (getenv('SMTP_TO') ?: 'penerima@example.test');
-$subject = (string) (getenv('SMTP_SUBJECT') ?: 'Uji SMTP NovelVerse');
-$body = (string) (getenv('SMTP_BODY') ?: "Halo,\r\n\r\nIni pesan uji transport SMTP NovelVerse.\r\n");
+$subject = (string) (getenv('SMTP_SUBJECT') ?: 'Uji SMTP Luminara');
+$body = (string) (getenv('SMTP_BODY') ?: "Halo,\r\n\r\nIni pesan uji transport SMTP Luminara.\r\n");
 
 try {
     Mailer::send($to, $subject, $body);

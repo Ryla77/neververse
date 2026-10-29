@@ -216,7 +216,7 @@ $historyUrl = static function (array $item): string {
                 <section class="panel upgrade-card" id="jadi-penulis">
                     <span class="upgrade-card__icon"><?= icon('pencil') ?></span>
                     <span class="eyebrow">Untuk pembaca yang menulis</span>
-                    <h2>Jadi penulis NovelVerse</h2>
+                    <h2>Jadi penulis Luminara</h2>
                     <p class="small">Aktifkan akses penulis untuk membuat novel, mengunggah sampul, menulis bab, dan mengelola draf. Akses ini gratis dan dapat dimulai kapan saja.</p>
                     <form action="<?= e(url('profil/jadi-penulis')) ?>" method="post">
                         <?= csrf_field() ?>

@@ -26,7 +26,7 @@ final class EmailVerificationService
 
             return true;
         } catch (Throwable $e) {
-            error_log('[NovelVerse] Gagal mengirim email verifikasi: ' . $e->getMessage());
+            error_log('[Luminara] Gagal mengirim email verifikasi: ' . $e->getMessage());
 
             return false;
         }

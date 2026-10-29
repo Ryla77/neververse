@@ -7,7 +7,7 @@ $smtpPort = (int) env('MAIL_PORT', $smtpEncryption === 'ssl' ? 465 : 587);
 
 return [
     'app' => [
-        'name' => (string) env('APP_NAME', 'NovelVerse'),
+        'name' => (string) env('APP_NAME', 'Luminara'),
         'env' => (string) env('APP_ENV', 'production'),
         'debug' => filter_var(env('APP_DEBUG', false), FILTER_VALIDATE_BOOL),
         'timezone' => (string) env('APP_TIMEZONE', 'Asia/Jakarta'),
@@ -30,7 +30,7 @@ return [
             env('APP_ENV', 'production') === 'local' ? 'file' : 'mail'
         ),
         'from_address' => (string) env('MAIL_FROM_ADDRESS', 'no-reply@novelverse.local'),
-        'from_name' => (string) env('MAIL_FROM_NAME', env('APP_NAME', 'NovelVerse')),
+        'from_name' => (string) env('MAIL_FROM_NAME', env('APP_NAME', 'Luminara')),
         'path' => BASE_PATH . '/storage/mail',
         'smtp' => [
             'host' => (string) env('MAIL_HOST', 'localhost'),
@@ -53,7 +53,7 @@ return [
         'app_key' => (string) env('APP_KEY', ''),
     ],
     'two_factor' => [
-        'issuer' => (string) env('APP_NAME', 'NovelVerse'),
+        'issuer' => (string) env('APP_NAME', 'Luminara'),
         'pending_ttl_seconds' => 600,
         'recovery_code_count' => 8,
     ],

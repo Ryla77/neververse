@@ -13,7 +13,7 @@ $options = getopt('', ['db-root-user:', 'db-root-password:', 'admin-email:', 'fo
 
 if (isset($options['help'])) {
     echo <<<TXT
-NovelVerse Installer
+Luminara Installer
 
 Penggunaan:
   php bin/install.php [opsi]
@@ -54,7 +54,7 @@ foreach (['nama database' => $dbName, 'user database' => $dbUser] as $label => $
     }
 }
 
-echo "== Instalasi NovelVerse ==\n\n";
+echo "== Instalasi Luminara ==\n\n";
 echo "Host database : {$host}:{$port}\n";
 echo "Nama database : {$dbName}\n";
 echo "User aplikasi : {$dbUser}\n\n";
@@ -217,7 +217,7 @@ function write_env(string $path, array $values): void
         '# Dibuat otomatis oleh bin/install.php pada ' . date('Y-m-d H:i:s'),
         '# File ini berisi kredensial. Jangan dibagikan atau di-commit.',
         '',
-        'APP_NAME="NovelVerse"',
+        'APP_NAME="Luminara"',
         'APP_ENV=local',
         'APP_DEBUG=false',
         'APP_TIMEZONE=Asia/Jakarta',

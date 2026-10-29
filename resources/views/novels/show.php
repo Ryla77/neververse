@@ -303,7 +303,7 @@ $latestChapter = $chapters !== [] ? $chapters[count($chapters) - 1] : null;
                 <div>
                     <span class="eyebrow">Penulis</span>
                     <h3><?= e($novel['author_name']) ?></h3>
-                    <p class="small muted">Novel ini merupakan karya original yang diterbitkan melalui NovelVerse.</p>
+                    <p class="small muted">Novel ini merupakan karya original yang diterbitkan melalui Luminara.</p>
                 </div>
             </section>
         </aside>

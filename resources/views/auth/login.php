@@ -17,7 +17,7 @@ use App\Core\View;
             </ul>
             <div class="auth-aside__quote">
                 <p>“Sebuah cerita tidak pernah benar-benar selesai selama masih ada pembaca yang kembali ke halaman pertama.”</p>
-                <span>— Catatan redaksi NovelVerse</span>
+                <span>— Catatan redaksi Luminara</span>
             </div>
         </aside>
 

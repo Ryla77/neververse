@@ -21,8 +21,8 @@ final class AuthController extends Controller
     public function loginForm(Request $request): void
     {
         $this->render('auth/login', [
-            'title' => 'Masuk — NovelVerse',
-            'metaDescription' => 'Masuk ke akun NovelVerse untuk menyimpan perpustakaan dan progres membaca.',
+            'title' => 'Masuk — Luminara',
+            'metaDescription' => 'Masuk ke akun Luminara untuk menyimpan perpustakaan dan progres membaca.',
             'redirect' => $request->safeRedirectPath($request->input('redirect'), '/'),
         ], 'layouts/minimal');
     }
@@ -86,8 +86,8 @@ final class AuthController extends Controller
     public function registerForm(Request $request): void
     {
         $this->render('auth/register', [
-            'title' => 'Daftar — NovelVerse',
-            'metaDescription' => 'Buat akun NovelVerse gratis dan mulai bangun perpustakaan ceritamu.',
+            'title' => 'Daftar — Luminara',
+            'metaDescription' => 'Buat akun Luminara gratis dan mulai bangun perpustakaan ceritamu.',
         ], 'layouts/minimal');
     }
 

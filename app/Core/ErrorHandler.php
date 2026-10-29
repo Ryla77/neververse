@@ -15,7 +15,7 @@ final class ErrorHandler
         self::log($e, $reference);
 
         if (PHP_SAPI === 'cli') {
-            fwrite(STDERR, '[NovelVerse][' . $reference . '] ' . get_class($e) . ': ' . $e->getMessage() . PHP_EOL);
+            fwrite(STDERR, '[Luminara][' . $reference . '] ' . get_class($e) . ': ' . $e->getMessage() . PHP_EOL);
             exit(1);
         }
 

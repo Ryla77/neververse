@@ -14,7 +14,7 @@ final class Mailer
         if ($name === '') {
             $name = 'Pengguna';
         }
-        $appName = (string) config('app.name', 'NovelVerse');
+        $appName = (string) config('app.name', 'Luminara');
         $ttlMinutes = max(5, $ttlMinutes);
 
         $subject = 'Reset kata sandi ' . $appName;
@@ -34,7 +34,7 @@ final class Mailer
         if ($name === '') {
             $name = 'Pengguna';
         }
-        $appName = (string) config('app.name', 'NovelVerse');
+        $appName = (string) config('app.name', 'Luminara');
         $ttlMinutes = max(5, $ttlMinutes);
         $duration = $ttlMinutes % 60 === 0
             ? intdiv($ttlMinutes, 60) . ' jam'
@@ -61,10 +61,10 @@ final class Mailer
         if (filter_var($fromAddress, FILTER_VALIDATE_EMAIL) === false) {
             throw new RuntimeException('Alamat pengirim email tidak valid.');
         }
-        $fromName = trim((string) config('mail.from_name', 'NovelVerse'));
+        $fromName = trim((string) config('mail.from_name', 'Luminara'));
         $fromName = trim(preg_replace('/[\r\n]+/u', ' ', $fromName) ?? '');
         if ($fromName === '') {
-            $fromName = 'NovelVerse';
+            $fromName = 'Luminara';
         }
 
         $headerBlock = [
@@ -87,7 +87,7 @@ final class Mailer
         if ($transport === 'file') {
             $raw = implode("\r\n", array_merge($headerBlock, [
                 'Content-Transfer-Encoding: 8bit',
-                'X-Mailer: NovelVerse',
+                'X-Mailer: Luminara',
             ])) . "\r\n\r\n" . $body;
             self::writeToDisk($raw);
             return;
@@ -96,7 +96,7 @@ final class Mailer
         if ($transport === 'smtp') {
             $raw = implode("\r\n", array_merge($headerBlock, [
                 'Content-Transfer-Encoding: quoted-printable',
-                'X-Mailer: NovelVerse',
+                'X-Mailer: Luminara',
             ])) . "\r\n\r\n" . quoted_printable_encode(rtrim($body, "\r\n")) . "\r\n";
             (new SmtpTransport((array) config('mail.smtp', [])))->send($fromAddress, $to, $raw);
             return;
@@ -111,7 +111,7 @@ final class Mailer
             'Content-Type: text/plain; charset=UTF-8',
             'Content-Transfer-Encoding: 8bit',
             'From: ' . self::encodeHeader($fromName) . ' <' . $fromAddress . '>',
-            'X-Mailer: NovelVerse',
+            'X-Mailer: Luminara',
         ];
         if (!function_exists('mail')) {
             throw new RuntimeException('Fungsi email server tidak tersedia.');

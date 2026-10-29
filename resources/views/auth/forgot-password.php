@@ -9,7 +9,7 @@ use App\Core\View;
         <aside class="auth-aside">
             <span class="eyebrow">Pemulihan akun</span>
             <h1>Kembali ke rak bacaanmu dalam beberapa langkah.</h1>
-            <p>Masukkan email akun NovelVerse. Kami akan mengirim tautan aman untuk membuat kata sandi baru.</p>
+            <p>Masukkan email akun Luminara. Kami akan mengirim tautan aman untuk membuat kata sandi baru.</p>
             <ul class="auth-benefits">
                 <li><?= icon('mail', 'icon icon--sm') ?> Tautan dikirim ke email terdaftar</li>
                 <li><?= icon('clock', 'icon icon--sm') ?> Berlaku terbatas dan sekali pakai</li>
@@ -17,7 +17,7 @@ use App\Core\View;
             </ul>
             <div class="auth-aside__quote">
                 <p>“Pintu yang terkunci bukan akhir dari cerita — selalu ada kunci cadangan.”</p>
-                <span>— Catatan redaksi NovelVerse</span>
+                <span>— Catatan redaksi Luminara</span>
             </div>
         </aside>
 

@@ -17,7 +17,7 @@ use App\Core\View;
             </ul>
             <div class="auth-aside__quote">
                 <p>“Setiap pembaca adalah penulis yang sedang mencari kalimat pertamanya.”</p>
-                <span>— NovelVerse</span>
+                <span>— Luminara</span>
             </div>
         </aside>
 

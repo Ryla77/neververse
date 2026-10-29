@@ -1,4 +1,4 @@
--- NovelVerse - Skema Database
+-- Luminara - Skema Database
 -- MySQL 8.0+ / MariaDB 10.4+ (XAMPP)
 -- Impor melalui bin/install.php atau phpMyAdmin.
 

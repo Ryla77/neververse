@@ -13,7 +13,7 @@ $novelItems = $recentNovels['items'] ?? [];
             <div>
                 <span class="eyebrow">Administrasi</span>
                 <h1>Ikhtisar platform</h1>
-                <p class="lead">Pantau pengguna, konten, dan laporan moderasi NovelVerse dari satu tempat.</p>
+                <p class="lead">Pantau pengguna, konten, dan laporan moderasi Luminara dari satu tempat.</p>
             </div>
             <div class="dashboard-head__actions">
                 <a class="btn btn--ghost" href="<?= e(url('/')) ?>" target="_blank" rel="noopener"><?= icon('external', 'icon icon--sm') ?>Lihat situs</a>

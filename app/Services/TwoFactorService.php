@@ -46,7 +46,7 @@ final class TwoFactorService
 
     public static function provisioningUri(string $email, string $secret): string
     {
-        return Totp::provisioningUri($email, $secret, (string) config('two_factor.issuer', 'NovelVerse'));
+        return Totp::provisioningUri($email, $secret, (string) config('two_factor.issuer', 'Luminara'));
     }
 
     /**

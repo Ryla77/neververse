@@ -1,4 +1,4 @@
-/* NovelVerse — interaksi antarmuka (tanpa dependensi, CSP-friendly). */
+/* Luminara — interaksi antarmuka (tanpa dependensi, CSP-friendly). */
 (function () {
     'use strict';
 

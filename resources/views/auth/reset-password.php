@@ -22,7 +22,7 @@ $ttlMinutes = (int) ($ttlMinutes ?? 60);
             </ul>
             <div class="auth-aside__quote">
                 <p>“Kata sandi yang baik adalah kata sandi yang tidak pernah kamu bagikan.”</p>
-                <span>— Catatan redaksi NovelVerse</span>
+                <span>— Catatan redaksi Luminara</span>
             </div>
         </aside>
 

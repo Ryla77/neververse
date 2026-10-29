@@ -15,7 +15,7 @@ use App\Models\UserModel;
 
 if (isset($argv[1]) && in_array($argv[1], ['-h', '--help'], true)) {
     echo <<<TXT
-Reset Kata Sandi Admin NovelVerse
+Reset Kata Sandi Admin Luminara
 
 Penggunaan:
   php bin/reset-admin-password.php [email]

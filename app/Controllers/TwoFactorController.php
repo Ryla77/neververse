@@ -29,7 +29,7 @@ final class TwoFactorController extends Controller
         }
 
         $this->render('auth/two-factor-challenge', [
-            'title' => 'Verifikasi dua langkah — NovelVerse',
+            'title' => 'Verifikasi dua langkah — Luminara',
             'metaDescription' => 'Masukkan kode dari aplikasi autentikator untuk menyelesaikan proses masuk.',
             'email' => (string) $pending['email'],
         ], 'layouts/minimal');
@@ -109,7 +109,7 @@ final class TwoFactorController extends Controller
         );
 
         $this->render('auth/two-factor-setup', [
-            'title' => 'Aktifkan verifikasi dua langkah — NovelVerse',
+            'title' => 'Aktifkan verifikasi dua langkah — Luminara',
             'metaDescription' => 'Tambahkan kunci rahasia ke aplikasi autentikator, lalu konfirmasi kode 6 digit.',
             'email' => (string) $user['email'],
             'secretLines' => $secretLines,
