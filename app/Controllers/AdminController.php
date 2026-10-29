@@ -10,6 +10,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Uploader;
 use App\Core\Validator;
+use App\Models\AuditLogModel;
 use App\Models\CategoryModel;
 use App\Models\ChapterModel;
 use App\Models\CommentModel;
@@ -88,6 +89,14 @@ final class AdminController extends Controller
             Response::back('admin/pengguna');
         }
 
+        $changes = [];
+        if ($role !== $user['role']) {
+            $changes[] = 'peran dari ' . role_label((string) $user['role']) . ' menjadi ' . role_label($role);
+        }
+        if ($active !== $isActive) {
+            $changes[] = $active ? 'status menjadi aktif' : 'status menjadi nonaktif';
+        }
+
         if ($role !== $user['role']) {
             UserModel::setRole($targetId, $role);
         }
@@ -96,6 +105,10 @@ final class AdminController extends Controller
             if (!$active) {
                 PasswordResetModel::deleteForUser($targetId);
             }
+        }
+
+        if ($changes !== []) {
+            $this->audit($request, 'user.update', 'user', $targetId, 'Mengubah ' . implode(' dan ', $changes) . ' untuk ' . $user['display_name'] . '.');
         }
 
         $this->flashSuccess('Data pengguna ' . $user['display_name'] . ' berhasil diperbarui.');
@@ -112,6 +125,7 @@ final class AdminController extends Controller
         $password = $this->randomPassword(16);
         UserModel::updatePassword((int) $user['id'], password_hash($password, PASSWORD_DEFAULT));
         PasswordResetModel::deleteForUser((int) $user['id']);
+        $this->audit($request, 'user.password_reset', 'user', (int) $user['id'], 'Mereset kata sandi ' . $user['email'] . '.');
         $this->flashSuccess(
             'Kata sandi sementara untuk ' . $user['email'] . ': ' . $password
             . '. Tampilkan sekali ini dan minta pengguna segera menggantinya.'
@@ -132,6 +146,7 @@ final class AdminController extends Controller
         }
 
         TwoFactorService::disable((int) $user['id']);
+        $this->audit($request, 'user.two_factor_reset', 'user', (int) $user['id'], 'Mereset verifikasi dua langkah ' . $user['display_name'] . '.');
         $this->flashSuccess(
             'Verifikasi dua langkah untuk ' . $user['display_name'] . ' telah direset. '
             . 'Pengguna dapat masuk dengan kata sandi dan mengaktifkannya kembali dari profil.'
@@ -171,10 +186,12 @@ final class AdminController extends Controller
                 Response::back('admin/novel');
             }
             NovelModel::setPublishStatus((int) $novel['id'], 'published');
+            $this->audit($request, 'novel.publish', 'novel', (int) $novel['id'], 'Menerbitkan novel ' . $novel['title'] . '.');
             $this->flashSuccess('Novel dipublikasikan.');
         } elseif ($action === 'unpublish') {
             NovelModel::setPublishStatus((int) $novel['id'], 'draft');
             NovelModel::setFeatured((int) $novel['id'], false);
+            $this->audit($request, 'novel.unpublish', 'novel', (int) $novel['id'], 'Mengembalikan novel ' . $novel['title'] . ' ke draf.');
             $this->flashInfo('Novel dikembalikan menjadi draf.');
         } else {
             abort(404);
@@ -196,6 +213,15 @@ final class AdminController extends Controller
 
         $featured = (int) $novel['is_featured'] !== 1;
         NovelModel::setFeatured((int) $novel['id'], $featured);
+        $this->audit(
+            $request,
+            $featured ? 'novel.featured' : 'novel.unfeatured',
+            'novel',
+            (int) $novel['id'],
+            $featured
+                ? 'Menandai novel ' . $novel['title'] . ' sebagai unggulan.'
+                : 'Menghapus tanda unggulan novel ' . $novel['title'] . '.'
+        );
         $this->flashSuccess($featured ? 'Novel ditandai sebagai unggulan.' : 'Tanda unggulan dihapus.');
         Response::back('admin/novel');
     }
@@ -209,6 +235,7 @@ final class AdminController extends Controller
 
         NovelModel::delete((int) $novel['id']);
         Uploader::delete($novel['cover_path']);
+        $this->audit($request, 'novel.delete', 'novel', (int) $novel['id'], 'Menghapus novel ' . $novel['title'] . ' beserta bab dan interaksinya.');
         $this->flashInfo('Novel beserta bab dan interaksinya telah dihapus.');
         Response::back('admin/novel');
     }
@@ -245,6 +272,18 @@ final class AdminController extends Controller
 
         ChapterModel::setStatus((int) $chapter['id'], $action === 'publish' ? 'published' : 'draft');
         NovelModel::touch((int) $chapter['novel_id']);
+        $chapterLabel = 'bab ' . $chapter['chapter_number'] . ' "' . $chapter['title'] . '"';
+        $novel = NovelModel::find((int) $chapter['novel_id']);
+        $novelTitle = (string) ($novel['title'] ?? ('#' . $chapter['novel_id']));
+        $this->audit(
+            $request,
+            $action === 'publish' ? 'chapter.publish' : 'chapter.draft',
+            'chapter',
+            (int) $chapter['id'],
+            $action === 'publish'
+                ? 'Menerbitkan ' . $chapterLabel . ' pada novel ' . $novelTitle . '.'
+                : 'Mengembalikan ' . $chapterLabel . ' pada novel ' . $novelTitle . ' ke draf.'
+        );
         $this->flashSuccess($action === 'publish' ? 'Bab dipublikasikan.' : 'Bab disimpan sebagai draf.');
         Response::back('admin/bab');
     }
@@ -258,6 +297,13 @@ final class AdminController extends Controller
 
         ChapterModel::delete((int) $chapter['id']);
         NovelModel::touch((int) $chapter['novel_id']);
+        $this->audit(
+            $request,
+            'chapter.delete',
+            'chapter',
+            (int) $chapter['id'],
+            'Menghapus bab ' . $chapter['chapter_number'] . ' "' . $chapter['title'] . '" dari novel #' . $chapter['novel_id'] . '.'
+        );
         $this->flashInfo('Bab dihapus.');
         Response::back('admin/bab');
     }
@@ -290,7 +336,8 @@ final class AdminController extends Controller
             Response::redirect('admin/genre');
         }
 
-        CategoryModel::create($name, CategoryModel::uniqueSlug($name), $description !== '' ? $description : null);
+        $genreId = CategoryModel::create($name, CategoryModel::uniqueSlug($name), $description !== '' ? $description : null);
+        $this->audit($request, 'genre.create', 'genre', $genreId, 'Menambahkan genre ' . $name . '.');
         $this->flashSuccess('Genre baru ditambahkan.');
         Response::redirect('admin/genre');
     }
@@ -324,6 +371,15 @@ final class AdminController extends Controller
             CategoryModel::uniqueSlug($name, (int) $genre['id']),
             $description !== '' ? $description : null
         );
+        $this->audit(
+            $request,
+            'genre.update',
+            'genre',
+            (int) $genre['id'],
+            $genre['name'] === $name
+                ? 'Memperbarui genre ' . $name . '.'
+                : 'Mengubah genre ' . $genre['name'] . ' menjadi ' . $name . '.'
+        );
         $this->flashSuccess('Genre diperbarui.');
         Response::redirect('admin/genre');
     }
@@ -343,6 +399,7 @@ final class AdminController extends Controller
         if ($statement->rowCount() === 0) {
             $this->flashError('Genre masih dipakai oleh novel. Pindahkan novel ke genre lain terlebih dahulu.');
         } else {
+            $this->audit($request, 'genre.delete', 'genre', (int) $genre['id'], 'Menghapus genre ' . $genre['name'] . '.');
             $this->flashInfo('Genre dihapus.');
         }
         Response::redirect('admin/genre');
@@ -378,6 +435,14 @@ final class AdminController extends Controller
         }
 
         CommentModel::setStatus((int) $comment['id'], $action === 'hide' ? 'hidden' : 'visible');
+        $this->audit(
+            $request,
+            $action === 'hide' ? 'comment.hide' : 'comment.show',
+            'comment',
+            (int) $comment['id'],
+            ($action === 'hide' ? 'Menyembunyikan' : 'Menampilkan kembali')
+                . ' komentar oleh ' . $comment['user_name'] . ' pada novel ' . $comment['novel_title'] . '.'
+        );
         $this->flashSuccess($action === 'hide' ? 'Komentar disembunyikan.' : 'Komentar ditampilkan kembali.');
         Response::back('admin/komentar');
     }
@@ -389,6 +454,13 @@ final class AdminController extends Controller
             abort(404);
         }
         CommentModel::delete((int) $comment['id']);
+        $this->audit(
+            $request,
+            'comment.delete',
+            'comment',
+            (int) $comment['id'],
+            'Menghapus komentar oleh ' . $comment['user_name'] . ' pada novel ' . $comment['novel_title'] . '.'
+        );
         $this->flashInfo('Komentar dihapus permanen.');
         Response::back('admin/komentar');
     }
@@ -427,6 +499,7 @@ final class AdminController extends Controller
         }
 
         ReportModel::setStatus((int) $report['id'], 'resolved', (int) Auth::id());
+        $this->audit($request, 'report.resolve', 'report', (int) $report['id'], 'Menandai laporan #' . $report['id'] . ' selesai.');
         $this->flashSuccess('Laporan ditandai selesai.');
         Response::back('admin/laporan');
     }
@@ -443,8 +516,46 @@ final class AdminController extends Controller
         }
 
         ReportModel::setStatus((int) $report['id'], 'dismissed', (int) Auth::id());
+        $this->audit($request, 'report.dismiss', 'report', (int) $report['id'], 'Menolak laporan #' . $report['id'] . ' tanpa tindakan.');
         $this->flashInfo('Laporan ditolak tanpa tindakan.');
         Response::back('admin/laporan');
+    }
+
+    public function auditLog(Request $request): void
+    {
+        $action = $request->string('action');
+        if (!isset(AuditLogModel::ACTIONS[$action])) {
+            $action = '';
+        }
+        $query = mb_substr($request->string('q'), 0, 100);
+        $page = max(1, $request->int('page', 1));
+
+        $this->render('admin/audit', [
+            'title' => 'Log audit — Admin NovelVerse',
+            'metaDescription' => 'Riwayat tindakan admin yang mengubah data NovelVerse.',
+            'result' => AuditLogModel::list($action, $query, $page),
+            'action' => $action,
+            'query' => $query,
+            'actions' => AuditLogModel::ACTIONS,
+        ]);
+    }
+
+    private function audit(Request $request, string $action, ?string $targetType, ?int $targetId, string $summary): void
+    {
+        $actor = Auth::user();
+        if ($actor === null) {
+            return;
+        }
+
+        AuditLogModel::record(
+            (int) $actor['id'],
+            (string) $actor['display_name'],
+            $action,
+            $targetType,
+            $targetId,
+            $summary,
+            $request->ip()
+        );
     }
 
     private function randomPassword(int $length): string

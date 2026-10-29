@@ -11,7 +11,7 @@ Fitur utama:
 - Registrasi, login, logout, verifikasi email, ubah profil, ubah kata sandi, peningkatan peran menjadi penulis, serta lupa/reset kata sandi melalui email dengan transport `file`, `mail()`, atau SMTP ber-TLS. Komentar, rating, dan akses penulis baru aktif setelah email terverifikasi. Verifikasi dua langkah (2FA) berbasis TOTP tersedia sebagai perlindungan tambahan saat login.
 - Perpustakaan pribadi: novel tersimpan, riwayat baca, lanjutkan membaca, dan hapus dari perpustakaan.
 - Dashboard penulis: kelola novel milik sendiri, unggah sampul, tulis/edit bab, draf, publikasi, dan status ongoing/completed.
-- Dashboard admin: statistik, pengguna dan peran, novel, bab, genre, moderasi komentar, serta laporan.
+- Dashboard admin: statistik, pengguna dan peran, novel, bab, genre, moderasi komentar, laporan, serta log audit tindakan admin.
 - Tema gelap/terang, desain responsif untuk desktop, tablet, dan ponsel.
 - Keamanan dasar: `password_hash()`/`password_verify()`, CSRF, session yang diperketat, prepared statement, escaping output, kontrol peran di backend, pembatasan percobaan, validasi unggahan, dan 2FA TOTP dengan rahasia terenkripsi serta kode pemulihan sekali pakai.
 
@@ -355,6 +355,7 @@ Jika aplikasi dipasang di subfolder (misalnya `http://localhost/novelverse`), ar
 | `/profil/2fa/nonaktif` | Nonaktifkan 2FA dengan kata sandi + kode (POST) | Login |
 | `/tulis` | Dashboard penulis | Penulis/Admin |
 | `/admin` | Dashboard admin | Admin |
+| `/admin/audit` | Log audit tindakan admin (filter aksi/pencarian) | Admin |
 
 Aksi yang mengubah data selalu diperiksa di backend: middleware peran untuk area dashboard, ditambah pemeriksaan kepemilikan record untuk novel/bab penulis. Menyembunyikan tombol di UI bukan satu-satunya kontrol.
 
@@ -364,7 +365,7 @@ Peran:
 
 - **Pembaca (`reader`)**: membaca, menyimpan novel, memberi komentar/rating, menyimpan progres, melaporkan konten.
 - **Penulis (`author`)**: semua hak pembaca, ditambah mengelola novel dan bab miliknya sendiri.
-- **Admin (`admin`)**: mengelola pengguna, novel, bab, genre, komentar, dan laporan.
+- **Admin (`admin`)**: mengelola pengguna, novel, bab, genre, komentar, laporan, dan meninjau log audit.
 
 ## Admin Pertama dan Pengelolaan Akun
 
@@ -375,6 +376,21 @@ Peran:
 - Tombol **Reset sandi** membuat kata sandi sementara acak dan menampilkannya sekali di pesan flash. Sampaikan kepada pengguna dan minta segera mengganti. Reset oleh admin otomatis mengakhiri seluruh sesi aktif pengguna tersebut; perubahan sandi mandiri tetap mempertahankan sesi saat ini.
 - Tombol **Reset 2FA** muncul untuk pengguna dengan 2FA aktif. Aksi ini hanya tersedia untuk peran admin (diperiksa di backend), menghapus kunci TOTP beserta seluruh kode pemulihan, dan tidak mengubah kata sandi.
 - Sistem mencegah admin menonaktifkan/menurunkan perannya sendiri dan mencegah hilangnya admin aktif terakhir.
+
+## Log Audit Admin
+
+Menu **Log audit** di `/admin/audit` mencatat tindakan admin yang mengubah data, sehingga perubahan peran, moderasi, dan publikasi dapat ditelusuri.
+
+- Aksi yang dicatat: perubahan peran/status pengguna, reset kata sandi, reset 2FA, publikasi/unggulan/penghapusan novel, publikasi/draf/penghapusan bab, tambah/ubah/hapus genre, sembunyikan/tampilkan/hapus komentar, serta penyelesaian/penolakan laporan.
+- Setiap entri menyimpan waktu, nama admin (snapshot saat aksi), jenis aksi, target, ringkasan, dan alamat IP. Entri hanya ditulis setelah perubahan berhasil; aksi yang ditolak tidak menghasilkan entri.
+- Halaman menyediakan filter berdasarkan jenis aksi dan pencarian nama admin/ringkasan, dengan paginasi.
+- Log tidak menyimpan kata sandi, kata sandi sementara hasil reset, kunci/rahasia 2FA, kode pemulihan, atau isi komentar.
+- Nama admin disimpan sebagai snapshot, jadi riwayat tetap terbaca setelah akun admin dihapus (kolom `actor_id` menjadi `NULL` dan ditandai “Akun dihapus”).
+- Entri tidak dapat diubah atau dihapus dari antarmuka. Retensi dan pembersihan dilakukan langsung di database.
+
+Log ini adalah jejak audit tingkat aplikasi, **bukan** bukti anti-manipulasi: pengelola database tetap dapat mengubah atau menghapus baris. Untuk kebutuhan kepatuhan, alirkan tabel `admin_audit_logs` ke penyimpanan log eksternal yang append-only.
+
+Jika memperbarui instalasi lama, terapkan tabel `admin_audit_logs` dari `database/schema.sql` (aman dijalankan berulang karena memakai `CREATE TABLE IF NOT EXISTS`). Log mulai terisi setelah tabel tersedia; aksi lama tidak di-backfill.
 
 ## Lupa dan Reset Kata Sandi
 
@@ -493,14 +509,14 @@ C:\xampp\php\php.exe tests\run.php
 Hasil terakhir pada lingkungan ini:
 
 ```text
-Total pemeriksaan : 196
-Lulus             : 196
+Total pemeriksaan : 213
+Lulus             : 213
 Gagal             : 0
 ```
 
 Ringkasan tersimpan di `tests/last-run.json`; keluaran lengkap di `tests/last-output.txt`. Keduanya artefak tes dan di-gitignore.
 
-Cakupan tes antara lain: koneksi database, halaman publik, registrasi/login/logout, validasi, CSRF, pencarian/filter/urut/paginasi, detail novel, navigasi bab, progres baca, favorit tambah/hapus, komentar dan rating, laporan, unggahan sampul, alur draf hingga publikasi, pembatasan peran, kepemilikan novel, pengelolaan admin, output escaping, header keamanan, verifikasi email (email bertoken, banner, kirim ulang, pembatalan tautan lama, token sekali pakai, token kedaluwarsa, penolakan komentar/rating/akses penulis sebelum verifikasi, dan verifikasi ulang saat email berubah), alur lupa/reset kata sandi (pesan umum, email lokal, hash token, token sekali pakai, token kedaluwarsa, validasi sandi, login dengan sandi baru, dan pembatalan tautan saat sandi diubah), serta 2FA (aktivasi dengan kode TOTP, rahasia terenkripsi, kode pemulihan sekali tampil dan sekali pakai, sesi pending tanpa hak akses, penolakan kode salah, anti-replay, pergeseran langkah waktu, penonaktifan dengan kata sandi + kode, rate limit tantangan, status 2FA di daftar pengguna admin, penolakan reset oleh non-admin, dan reset 2FA oleh admin yang memulihkan akses masuk).
+Cakupan tes antara lain: koneksi database, halaman publik, registrasi/login/logout, validasi, CSRF, pencarian/filter/urut/paginasi, detail novel, navigasi bab, progres baca, favorit tambah/hapus, komentar dan rating, laporan, unggahan sampul, alur draf hingga publikasi, pembatasan peran, kepemilikan novel, pengelolaan admin, output escaping, header keamanan, verifikasi email (email bertoken, banner, kirim ulang, pembatalan tautan lama, token sekali pakai, token kedaluwarsa, penolakan komentar/rating/akses penulis sebelum verifikasi, dan verifikasi ulang saat email berubah), alur lupa/reset kata sandi (pesan umum, email lokal, hash token, token sekali pakai, token kedaluwarsa, validasi sandi, login dengan sandi baru, dan pembatalan tautan saat sandi diubah), serta 2FA (aktivasi dengan kode TOTP, rahasia terenkripsi, kode pemulihan sekali tampil dan sekali pakai, sesi pending tanpa hak akses, penolakan kode salah, anti-replay, pergeseran langkah waktu, penonaktifan dengan kata sandi + kode, rate limit tantangan, status 2FA di daftar pengguna admin, penolakan reset oleh non-admin, dan reset 2FA oleh admin yang memulihkan akses masuk), serta log audit admin (penolakan akses non-admin, pencatatan perubahan peran, genre, komentar, laporan ditolak, novel/bab, reset kata sandi dan 2FA, filter aksi/pencarian, dan jaminan kata sandi sementara tidak bocor ke log).
 
 ### Tes SMTP end-to-end
 
@@ -581,6 +597,7 @@ Log aplikasi berada di `storage/logs/app.log`. Log tidak diletakkan di folder pu
 - Verifikasi email ditegakkan di backend, bukan hanya lewat tampilan: komentar, rating, dan peningkatan peran penulis menolak akun yang belum terverifikasi. Mengganti email membatalkan status verifikasi dan memaksa verifikasi ulang alamat baru.
 - 2FA TOTP: rahasia dienkripsi AES-256-GCM dengan `APP_KEY`, kode pemulihan disimpan sebagai hash SHA-256 dan sekali pakai, kode TOTP tidak dapat dipakai ulang, sesi pending berlaku 10 menit tanpa hak akses, dan tantangan/aktivasi/penonaktifan dibatasi di backend. Reset 2FA hanya tersedia untuk admin dan dijaga middleware peran.
 - Transport SMTP memverifikasi sertifikat server (TLS 1.2/1.3, `verify_peer` dan `verify_peer_name` aktif), mewajibkan STARTTLS pada mode `tls`, menolak kredensial tanpa TLS, serta tidak menuliskan kata sandi ke pesan kesalahan atau log.
+- Log audit mencatat aksi admin yang berhasil mengubah data (pelaku, aksi, target, ringkasan, IP, waktu) dan hanya dapat dibaca lewat halaman admin. Kata sandi, kata sandi sementara, rahasia/kode 2FA, dan isi komentar tidak pernah ditulis ke log.
 - Unggahan divalidasi tipe isi, ukuran, dan dimensi; nama file diacak; eksekusi PHP di folder unggahan dinonaktifkan.
 - Header keamanan: CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, dan `Permissions-Policy`.
 - Kredensial database hanya di `.env` yang di-gitignore; tidak ada kata sandi admin permanen di source.
@@ -598,6 +615,7 @@ Aplikasi belum diaudit oleh pihak ketiga. Pengujian yang dilakukan adalah tes in
 - Pemeriksaan visual terutama dilakukan di Chrome; belum ada rangkaian otomatis lintas browser atau audit Lighthouse formal.
 - Data contoh berisi 3–4 bab per novel. Filter bab di reader diuji dengan data sementara.
 - Aplikasi belum menyertakan konfigurasi HTTPS. Gunakan HTTPS dan `APP_DEBUG=false` saat produksi.
+- Log audit bersifat aplikasi: belum ada ekspor, retensi otomatis, atau pengiriman ke penyimpanan append-only eksternal, sehingga pengelola database masih dapat mengubahnya.
 - Tidak ada pipeline CI/CD atau Composer; dependensi bersifat bawaan PHP.
 
 ## Konten dan Lisensi Data Contoh

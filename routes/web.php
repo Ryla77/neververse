@@ -106,4 +106,5 @@ return static function (Router $router): void {
     $router->get('/admin/laporan', [AdminController::class, 'reports'], ['role:admin']);
     $router->post('/admin/laporan/{id}/selesai', [AdminController::class, 'resolveReport'], ['role:admin']);
     $router->post('/admin/laporan/{id}/tolak', [AdminController::class, 'dismissReport'], ['role:admin']);
+    $router->get('/admin/audit', [AdminController::class, 'auditLog'], ['role:admin']);
 };

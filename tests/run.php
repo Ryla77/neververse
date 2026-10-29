@@ -289,6 +289,7 @@ check('Kredensial demo tersedia untuk pengujian', isset($demo['admin'][0], $demo
 Database::execute("DELETE FROM rate_limits");
 
 $suffix = date('ymdHis') . random_int(100, 999);
+$auditStartId = (int) Database::fetchColumn('SELECT COALESCE(MAX(id), 0) FROM admin_audit_logs');
 $testEmail = 'uji.' . $suffix . '@example.test';
 $testPassword = 'RahasiaUji!' . $suffix;
 $newPassword = 'RahasiaBaru!' . $suffix;
@@ -323,6 +324,9 @@ $reportId = null;
 $genreId = null;
 $testUserId = null;
 $pendingUserId = null;
+$auditUserId = null;
+$dismissReportId = null;
+$auditNovelId = null;
 $mailFilesCreated = [];
 
 try {
@@ -1003,6 +1007,7 @@ try {
     );
 
     check('Penulis tidak dapat membuka dashboard admin', $http->request('author', 'GET', '/admin')['status'] === 403);
+    check('Penulis tidak dapat membuka log audit', $http->request('author', 'GET', '/admin/audit')['status'] === 403);
 
     $adminCsrf = $http->request('admin', 'POST', '/admin/genre', ['name' => 'Tanpa Token']);
     check('Aksi admin tanpa CSRF ditolak', $adminCsrf['status'] === 419);
@@ -1021,6 +1026,28 @@ try {
     ]);
     check('Admin dapat mengubah peran pengguna lain', $demoteTestUser['status'] === 302 && Database::fetch('SELECT role FROM users WHERE id = ?', [$testUserId])['role'] === 'reader');
 
+    $auditUserId = Database::insert(
+        "INSERT INTO users (email, password_hash, display_name, role, is_active) VALUES (?, ?, ?, 'reader', 1)",
+        ['audit.' . $suffix . '@example.test', password_hash('TidakDipakai!' . $suffix, PASSWORD_DEFAULT), 'Pengguna Audit ' . $suffix]
+    );
+    $roleChange = postWith($http, 'admin', '/admin/pengguna/' . $auditUserId, ['role' => 'author', 'is_active' => '1']);
+    $roleChangeRow = Database::fetch('SELECT role FROM users WHERE id = ?', [$auditUserId]);
+    check('Admin dapat mengubah peran pengguna', $roleChange['status'] === 302 && $roleChangeRow['role'] === 'author');
+    $roleAudit = Database::fetch(
+        "SELECT actor_id, actor_name, summary, ip_address FROM admin_audit_logs
+         WHERE action = 'user.update' AND target_type = 'user' AND target_id = ?
+         ORDER BY id DESC LIMIT 1",
+        [$auditUserId]
+    );
+    check(
+        'Perubahan peran pengguna tercatat di log audit',
+        $roleAudit !== null
+            && (int) $roleAudit['actor_id'] === (int) $adminIds['id']
+            && str_contains((string) $roleAudit['summary'], 'Pembaca')
+            && str_contains((string) $roleAudit['summary'], 'Penulis')
+            && (string) $roleAudit['ip_address'] !== ''
+    );
+
     $genreName = 'Genre Uji ' . $suffix;
     $genreCreate = postWith($http, 'admin', '/admin/genre', ['name' => $genreName, 'description' => 'Genre untuk pengujian otomatis.']);
     $genreRow = Database::fetch('SELECT id FROM categories WHERE name = ?', [$genreName]);
@@ -1032,6 +1059,12 @@ try {
 
     $genreDelete = postWith($http, 'admin', '/admin/genre/' . $genreId . '/hapus', []);
     check('Admin dapat menghapus genre yang tidak dipakai', $genreDelete['status'] === 302 && dbCount('SELECT COUNT(*) FROM categories WHERE id = ?', [$genreId]) === 0);
+    check(
+        'Aksi genre tercatat di log audit',
+        dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'genre.create' AND target_id = ?", [$genreId]) === 1
+            && dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'genre.update' AND target_id = ?", [$genreId]) === 1
+            && dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'genre.delete' AND target_id = ?", [$genreId]) === 1
+    );
     if (dbCount('SELECT COUNT(*) FROM categories WHERE id = ?', [$genreId]) === 0) {
         $genreId = null;
     }
@@ -1045,6 +1078,12 @@ try {
 
     $deleteComment = postWith($http, 'admin', '/admin/komentar/' . $commentId . '/hapus', []);
     check('Admin dapat menghapus komentar permanen', $deleteComment['status'] === 302 && dbCount('SELECT COUNT(*) FROM comments WHERE id = ?', [$commentId]) === 0);
+    check(
+        'Aksi moderasi komentar tercatat di log audit',
+        dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'comment.hide' AND target_id = ?", [$commentId]) === 1
+            && dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'comment.show' AND target_id = ?", [$commentId]) === 1
+            && dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'comment.delete' AND target_id = ?", [$commentId]) === 1
+    );
     $commentId = null;
 
     $reportsPage = $http->request('admin', 'GET', '/admin/laporan?status=open');
@@ -1052,7 +1091,17 @@ try {
     $resolve = postWith($http, 'admin', '/admin/laporan/' . $reportId . '/selesai', []);
     $reportAfter = Database::fetch('SELECT status, resolved_by FROM reports WHERE id = ?', [$reportId]);
     check('Admin dapat menyelesaikan laporan', $resolve['status'] === 302 && $reportAfter['status'] === 'resolved' && (int) $reportAfter['resolved_by'] === (int) $adminIds['id']);
+    check('Penyelesaian laporan tercatat di log audit', dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'report.resolve' AND target_id = ?", [$reportId]) === 1);
     $reportId = null;
+
+    $dismissReportId = Database::insert(
+        "INSERT INTO reports (reporter_id, novel_id, reason, details, status, created_at)
+         VALUES (?, ?, 'spam', 'Laporan uji tolak audit.', 'open', NOW())",
+        [$testUserId, $testNovelId]
+    );
+    $dismiss = postWith($http, 'admin', '/admin/laporan/' . $dismissReportId . '/tolak', []);
+    check('Admin dapat menolak laporan', $dismiss['status'] === 302 && Database::fetch('SELECT status FROM reports WHERE id = ?', [$dismissReportId])['status'] === 'dismissed');
+    check('Penolakan laporan tercatat di log audit', dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'report.dismiss' AND target_id = ?", [$dismissReportId]) === 1);
 
     $featured = postWith($http, 'admin', '/admin/novel/' . $testNovelId . '/unggulan', []);
     check('Admin dapat menandai novel unggulan', $featured['status'] === 302 && (int) Database::fetch('SELECT is_featured FROM novels WHERE id = ?', [$testNovelId])['is_featured'] === 1);
@@ -1063,6 +1112,37 @@ try {
 
     $republish = postWith($http, 'admin', '/admin/novel/' . $testNovelId . '/publikasi', ['action' => 'publish']);
     check('Admin dapat menerbitkan kembali novel', $republish['status'] === 302 && Database::fetch('SELECT publish_status FROM novels WHERE id = ?', [$testNovelId])['publish_status'] === 'published');
+    check(
+        'Aksi publikasi novel tercatat di log audit',
+        dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'novel.publish' AND target_id = ?", [$testNovelId]) >= 1
+            && dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'novel.unpublish' AND target_id = ?", [$testNovelId]) === 1
+            && dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'novel.featured' AND target_id = ?", [$testNovelId]) === 1
+    );
+
+    $auditNovelId = Database::insert(
+        "INSERT INTO novels (author_id, title, slug, synopsis, publish_status) VALUES (?, ?, ?, 'Novel untuk uji log audit.', 'draft')",
+        [(int) $adminIds['id'], 'Novel Audit ' . $suffix, 'novel-audit-' . $suffix]
+    );
+    $auditChapterId = Database::insert(
+        "INSERT INTO chapters (novel_id, chapter_number, title, content, status) VALUES (?, 1, ?, 'Isi bab uji audit.', 'draft')",
+        [$auditNovelId, 'Bab Audit ' . $suffix]
+    );
+    $chapterPublish = postWith($http, 'admin', '/admin/bab/' . $auditChapterId . '/status', ['action' => 'publish']);
+    $chapterDraft = postWith($http, 'admin', '/admin/bab/' . $auditChapterId . '/status', ['action' => 'draft']);
+    $chapterDelete = postWith($http, 'admin', '/admin/bab/' . $auditChapterId . '/hapus', []);
+    check(
+        'Aksi status dan hapus bab tercatat di log audit',
+        $chapterPublish['status'] === 302
+            && $chapterDraft['status'] === 302
+            && $chapterDelete['status'] === 302
+            && dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'chapter.publish' AND target_id = ?", [$auditChapterId]) === 1
+            && dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'chapter.draft' AND target_id = ?", [$auditChapterId]) === 1
+            && dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'chapter.delete' AND target_id = ?", [$auditChapterId]) === 1
+    );
+    $auditNovelDelete = postWith($http, 'admin', '/admin/novel/' . $auditNovelId . '/hapus', []);
+    check('Admin dapat menghapus novel', $auditNovelDelete['status'] === 302 && dbCount('SELECT COUNT(*) FROM novels WHERE id = ?', [$auditNovelId]) === 0);
+    check('Penghapusan novel tercatat di log audit', dbCount("SELECT COUNT(*) FROM admin_audit_logs WHERE action = 'novel.delete' AND target_id = ?", [$auditNovelId]) === 1);
+    $auditNovelId = null;
 
     $resetVictimLogin = postWith($http, 'resetvictim', '/masuk', ['email' => $testEmail, 'password' => $newPassword]);
     check('Sesi pengguna aktif sebelum admin mereset kata sandi', $resetVictimLogin['status'] === 302 && locationIs($resetVictimLogin, '/') && $http->request('resetvictim', 'GET', '/profil')['status'] === 200);
@@ -1091,6 +1171,39 @@ try {
     $tokens = [];
     $tempLogout = $http->request('templogin', 'POST', '/keluar', ['_token' => tokenFor($http, 'templogin', '/')]);
     check('Sesi hasil reset ditutup', $tempLogout['status'] === 302);
+
+    $resetAudit = Database::fetch(
+        "SELECT actor_id, summary FROM admin_audit_logs
+         WHERE action = 'user.password_reset' AND target_id = ? ORDER BY id DESC LIMIT 1",
+        [$testUserId]
+    );
+    check(
+        'Reset kata sandi admin tercatat di log audit',
+        $resetAudit !== null
+            && (int) $resetAudit['actor_id'] === (int) $adminIds['id']
+            && str_contains((string) $resetAudit['summary'], $testEmail)
+    );
+    check(
+        'Log audit tidak menyimpan kata sandi sementara',
+        $temporaryPassword !== ''
+            && dbCount('SELECT COUNT(*) FROM admin_audit_logs WHERE summary LIKE ?', ['%' . $temporaryPassword . '%']) === 0
+    );
+
+    $auditPage = $http->request('admin', 'GET', '/admin/audit');
+    check(
+        'Halaman log audit menampilkan entri',
+        $auditPage['status'] === 200
+            && str_contains($auditPage['body'], 'Log audit')
+            && str_contains($auditPage['body'], 'Menambahkan genre ' . $genreName)
+            && str_contains($auditPage['body'], 'Mereset kata sandi ' . $testEmail)
+    );
+    $auditFiltered = $http->request('admin', 'GET', '/admin/audit?action=genre.create&q=' . urlencode($genreName));
+    check(
+        'Filter aksi dan pencarian log audit bekerja',
+        $auditFiltered['status'] === 200
+            && str_contains($auditFiltered['body'], 'Menambahkan genre ' . $genreName)
+            && !str_contains($auditFiltered['body'], 'Mereset kata sandi')
+    );
 
     /* ----------------------------------------------------------------------
        Lupa dan reset kata sandi melalui email
@@ -1504,6 +1617,16 @@ try {
             && !locationIs($loginAfterReset, '/masuk/2fa')
             && $http->request('twofactor', 'GET', '/profil')['status'] === 200
     );
+    $twoFactorAudit = Database::fetch(
+        "SELECT actor_id, summary FROM admin_audit_logs WHERE action = 'user.two_factor_reset' AND target_id = ? ORDER BY id DESC LIMIT 1",
+        [$twoFactorUserId]
+    );
+    check(
+        'Reset 2FA oleh admin tercatat di log audit',
+        $twoFactorAudit !== null
+            && (int) $twoFactorAudit['actor_id'] === (int) $adminIds['id']
+            && str_contains((string) $twoFactorAudit['summary'], 'verifikasi dua langkah')
+    );
     $tokens = [];
 
     /* ----------------------------------------------------------------------
@@ -1568,6 +1691,16 @@ try {
     if (isset($invalidCoverPath)) {
         @unlink($invalidCoverPath);
     }
+    if ($auditUserId !== null) {
+        Database::execute('DELETE FROM users WHERE id = ?', [$auditUserId]);
+    }
+    if ($dismissReportId !== null) {
+        Database::execute('DELETE FROM reports WHERE id = ?', [$dismissReportId]);
+    }
+    if ($auditNovelId !== null) {
+        Database::execute('DELETE FROM novels WHERE id = ?', [$auditNovelId]);
+    }
+    Database::execute('DELETE FROM admin_audit_logs WHERE id > ?', [$auditStartId]);
     Database::execute('DELETE FROM rate_limits');
 }
 

@@ -234,3 +234,21 @@ CREATE TABLE IF NOT EXISTS user_recovery_codes (
     KEY idx_user_recovery_codes_user (user_id, used_at),
     CONSTRAINT fk_user_recovery_codes_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    actor_id INT UNSIGNED NULL,
+    actor_name VARCHAR(80) NOT NULL,
+    action VARCHAR(40) NOT NULL,
+    target_type VARCHAR(20) NULL,
+    target_id INT UNSIGNED NULL,
+    summary VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(45) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_admin_audit_created (created_at),
+    KEY idx_admin_audit_action (action),
+    KEY idx_admin_audit_actor (actor_id),
+    KEY idx_admin_audit_target (target_type, target_id),
+    CONSTRAINT fk_admin_audit_actor FOREIGN KEY (actor_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

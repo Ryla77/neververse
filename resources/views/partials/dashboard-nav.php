@@ -55,6 +55,9 @@ $openReports = $isAdmin ? \App\Models\ReportModel::countOpen() : 0;
                 <?= icon('flag', 'icon icon--sm') ?>Laporan
                 <?php if ($openReports > 0): ?><span class="nav-count"><?= $openReports ?></span><?php endif; ?>
             </a>
+            <a class="dashboard-nav__link<?= nav_active('/admin/audit') ? ' is-active' : '' ?>" href="<?= e(url('admin/audit')) ?>">
+                <?= icon('list', 'icon icon--sm') ?>Log audit
+            </a>
         </div>
     <?php endif; ?>
 
